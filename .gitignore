@@ -1,0 +1,51 @@
+# macOS System Files
+# -----------------------------------------------------------------------------
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must be capitalized in German Apple systems
+Icon # Note: The actual filename is "Icon" followed by a carriage return (Icon\r).
+     # 'Icon?' or 'Icon*' can also be used as a broader match.
+
+# Thumbnails
+._*
+
+# Files that might appear on external disks/partitions
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+TheVolumeSettingsFolder
+
+# Directories potentially created on network shares
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+
+# macOS Archive Utility when creating ZIPs of files with resource forks
+__MACOSX/
+
+# Optional: Xcode specific files (if you are not developing an Xcode project,
+# you might not need these, but they are macOS development related)
+# *.moved-aside
+# *.pbxuser
+# *.mode1v3
+# *.mode2v3
+# *.perspectivev3
+# xcuserdata/
+# *.xccheckout
+# *.xcscheme
+# build/
+# DerivedData/
+# *.hmap
+# *.ipa
+# *.dSYM.zip
+# *.dSYM
+
+# Optional: Swift Package Manager
+# .swiftpm/build/
+# .build/
