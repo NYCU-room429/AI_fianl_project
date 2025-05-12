@@ -11,21 +11,26 @@ HOP_LENGTH = 512
 N_MELS = 128
 WINDOW_SECONDS = 1.0
 
+
 def extract_mel(path, sr=SAMPLE_RATE):
     y, _ = librosa.load(path, sr=sr, mono=True)
-    mel = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=1024, hop_length=HOP_LENGTH, n_mels=N_MELS)
+    mel = librosa.feature.melspectrogram(
+        y=y, sr=sr, n_fft=1024, hop_length=HOP_LENGTH, n_mels=N_MELS
+    )
     mel_db = librosa.power_to_db(mel)
     return mel_db.T  # (time, mel)
 
+
 def parse_yaml(yaml_path):
-    with open(yaml_path, 'r') as f:
+    with open(yaml_path, "r") as f:
         meta = yaml.safe_load(f)
     stem_map = {}
-    for stem_id, data in meta['stems'].items():
-        instrument = data['inst_class'].lower()  # 轉小寫
+    for stem_id, data in meta["stems"].items():
+        instrument = data["inst_class"].lower()  # 轉小寫
         midi_path = f"{stem_id}.mid"  # 假設 MIDI 檔名為 S00.mid, S01.mid ...
         stem_map[instrument] = midi_path
     return stem_map
+
 
 def extract_instrument_labels(midi_dir, stem_map, total_frames, frame_hz, label_map):
     num_classes = len(label_map)
@@ -49,39 +54,43 @@ def extract_instrument_labels(midi_dir, stem_map, total_frames, frame_hz, label_
                     # 邊界檢查
                     start_frame = max(0, start_frame)
                     end_frame = min(total_frames - 1, end_frame)
-                    labels[start_frame:end_frame + 1, idx] = 1.0
+                    labels[start_frame : end_frame + 1, idx] = 1.0
         except Exception as e:
             print(f"Error processing {midi_path}: {e}")
             continue
 
     return labels
 
+
 def time_slice(data, labels, window_size):
     slices = []
     sliced_labels = []
     num_slices = data.shape[0] // window_size
     for i in range(num_slices):
-        x = data[i*window_size:(i+1)*window_size]
-        y = labels[i*window_size:(i+1)*window_size]
+        x = data[i * window_size : (i + 1) * window_size]
+        y = labels[i * window_size : (i + 1) * window_size]
         y_agg = (y.sum(axis=0) > 0).astype(np.float32)
         slices.append(x)
         sliced_labels.append(y_agg)
     return slices, sliced_labels
 
+
 def process_track(track_path, label_map, save_dir):
     print(f"Processing {track_path}...")
 
     # Feature
-    mel_path = os.path.join(track_path, 'mix.flac')
+    mel_path = os.path.join(track_path, "mix.flac")
     mel = extract_mel(mel_path)
     frame_hz = SAMPLE_RATE / HOP_LENGTH
 
     # Labels
-    yaml_path = os.path.join(track_path, 'metadata.yaml')
+    yaml_path = os.path.join(track_path, "metadata.yaml")
     # midi_dir = os.path.join(track_path, 'MIDI')
     print(track_path)
     stem_map = parse_yaml(yaml_path)
-    labels = extract_instrument_labels(track_path, stem_map, mel.shape[0], frame_hz, label_map)
+    labels = extract_instrument_labels(
+        track_path, stem_map, mel.shape[0], frame_hz, label_map
+    )
 
     # Time slicing
     win_size = int(WINDOW_SECONDS * frame_hz)
@@ -92,23 +101,35 @@ def process_track(track_path, label_map, save_dir):
         np.save(os.path.join(save_dir, f"{os.path.basename(track_path)}_{i}_x.npy"), x)
         np.save(os.path.join(save_dir, f"{os.path.basename(track_path)}_{i}_y.npy"), y)
 
-if __name__ == "__main__":
-    input_dir = "C:\\Users\\user\\Downloads\\Track01876\\Track01876"
-    output_dir = "C:\\Users\\user\\Downloads\\Track01876\\process"
+
+def data_processor(input_dir, output_dir, label_map):
     os.makedirs(output_dir, exist_ok=True)
+    for track_name in os.listdir(input_dir):
+        track_path = os.path.join(input_dir, track_name)
+        if os.path.isdir(track_path):
+            track_output_dir = os.path.join(output_dir, track_name)
+            os.makedirs(track_output_dir, exist_ok=True)
+            process_track(track_path, label_map, track_output_dir)
 
-    # Define the instrument label map
+
+if __name__ == "__main__":
     label_map = {
-        'acoustic_guitar': 0,
-        'violin': 1,
-        'cello': 2,
-        'piano': 3,
-        'drums': 4,
-        'electric_bass': 5,
-        'flute': 6,
-        'clarinet': 7,
-        # add more as needed
+        "bass": 0,
+        "brass": 1,
+        "flute": 2,
+        "guitar": 3,
+        "keyboard": 4,
+        "organ": 5,
+        "piano": 6,
+        "saxophone": 7,
+        "strings": 8,
+        "synthesizer": 9,
+        "trumpet": 10,
+        "trombone": 11,
+        "tuba": 12,
+        "violin": 13,
     }
-
-
-    process_track(input_dir, label_map, output_dir)
+    for split in ["test", "train", "validation"]:
+        input_dir = f"slakh2100_flac_redux\\slakh2100_flac_redux\\{split}"
+        output_dir = f"ProcessData\\{split}"
+        data_processor(input_dir, output_dir, label_map)
