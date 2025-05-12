@@ -117,3 +117,5 @@ deactivate #退出
             ├─metadata.yaml
             └─mix.flac
 ```
+### Reference
+https://github.com/ethman/slakh-utils
