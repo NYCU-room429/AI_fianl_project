@@ -4,6 +4,7 @@
 
 1. Initial Proposal: https://docs.google.com/document/d/1jZ7JGuw9_N2WezTFJKg-Jdab_Qe3hjmvzvFMn526SG0/edit?usp=sharing
 2. Progress Report Slides: https://docs.google.com/presentation/d/1NKNK1LOjQL-NjCYRZixUHCrWynjLjuiBDPvu7gCSuxY/edit?usp=sharing
+
 ```
 └─slakh2100_flac_redux
     └─slakh2100_flac_redux
@@ -95,4 +96,13 @@
             ├─all_src.mid
             ├─metadata.yaml
             └─mix.flac
+```
+
+### 建立虛擬環境
+
+```bash
+python -m venv ai_final
+ai_final\Scripts\activate
+pip install -r requirements.txt
+python main.py
 ```
