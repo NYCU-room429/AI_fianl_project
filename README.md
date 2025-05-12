@@ -98,11 +98,19 @@
             └─mix.flac
 ```
 
-### 建立虛擬環境
+### 虛擬環境
 
-```bash
-python -m venv ai_final
-ai_final\Scripts\activate
-pip install -r requirements.txt
-python main.py
-```
+1. 建立虛擬環境
+
+   ```bash
+   python -m venv ai_final
+   ai_final\Scripts\activate
+   pip install -r requirements.txt
+   python main.py
+   ```
+
+1. 退出虛擬環境
+
+   ```bash
+   deactivate
+   ```
