@@ -16,6 +16,14 @@ python main.py
 deactivate #退出
 ```
 
+```zsh
+python -m venv ai_final
+source ai_final/bin/activate
+pip install -r requirements.txt
+python main.py
+deactivate #退出
+```
+
 ### 資料格式
 
 ```
