@@ -1,4 +1,3 @@
-from mido import MidiFile
 import os
 import numpy as np
 import pandas as pd
@@ -14,11 +13,13 @@ from tqdm import tqdm
 def load_dataset(path: str) -> pd.DataFrame:
     track_data = []
     for track in tqdm(os.listdir(path=path)):
+        # directory
         track_dir = os.path.join(path, track)
         mix_path = os.path.join(track_dir, "mix.flac")
         meta_path = os.path.join(track_dir, "metadata.yaml")
         stems_dir = os.path.join(track_dir, "stems")
         midi_dir = os.path.join(track_dir, "MIDI")
+        all_src_midi_dir = os.path.join(track_dir, "all_src_mid")
         # stem read
         stem_flacs = []
         for stem in os.listdir(stems_dir):
@@ -35,6 +36,9 @@ def load_dataset(path: str) -> pd.DataFrame:
                 "track": track,
                 "mix": mix_path if os.path.isfile(mix_path) else None,
                 "metadata": meta_path if os.path.isfile(meta_path) else None,
+                "all_src_midi": (
+                    all_src_midi_dir if os.path.isfile(all_src_midi_dir) else None
+                ),
                 "stems": stem_flacs,
                 "midis": midi_files,
             }
@@ -42,19 +46,20 @@ def load_dataset(path: str) -> pd.DataFrame:
     return pd.DataFrame(track_data)
 
 
-def read_flacs(path: str) -> np.ndarray:
+def read_flac(path: str) -> np.ndarray:
     vocal, sr = librosa.load(path, sr=None, mono=False)
     if vocal.ndim > 1 and vocal.shape[0] > 1:
-        vocal_mono = librosa.to_mono(vocal)
+        vocal_mono = librosa.to_mono(vocal)  # convert to mono
     else:
         vocal_mono = vocal
 
-    mel = librosa.feature.melspectrogram(y=vocal_mono, sr=sr)
-    db_mel = librosa.power_to_db(mel, ref=np.max)
+    mel = librosa.feature.melspectrogram(y=vocal_mono, sr=sr)  # melspectrogram
+    db_mel = librosa.power_to_db(mel, ref=np.max)  # convert to decibel
 
     return db_mel
 
 
+# structure be like {'0': {'class': 'Piano', 'name': 'Acoustic Grand Piano'}, '1': {'class': 'Piano', 'name': 'Bright Acoustic Piano'},...}
 def read_instruments_class(path: str) -> dict:
     f = open(path, "r", encoding="utf-8")
     instruments = json.load(f)
@@ -62,8 +67,11 @@ def read_instruments_class(path: str) -> dict:
 
 
 def read_metadata(path: str) -> dict:
-    raise NotImplementedError("YAML reading not implemented yet.")
+    f = open(path, "r", encoding="utf-8")
+    metadata = yaml.safe_load(f)
+    return metadata
 
 
 def read_midi(path: str) -> List[pretty_midi.Instrument]:
-    raise NotImplementedError("MIDI reading not implemented yet.")
+    midi = pretty_midi.PrettyMIDI(path)
+    return midi.instruments
