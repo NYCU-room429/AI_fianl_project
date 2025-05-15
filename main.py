@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # for d in track_dicts:
     #     final_dict.update(d)
 
-    # print(process_track_data(row_dicts[0]))
+    print(process_track_data(row_dicts[0]))
 
     # plt.figure(figsize=(10, 4))
     # librosa.display.specshow(

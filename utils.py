@@ -74,39 +74,4 @@ def read_metadata(path: str) -> dict:
 
 def read_midi(path: str) -> List[pretty_midi.Instrument]:
     midi = pretty_midi.PrettyMIDI(path)
-    return midi.instruments
-
-
-def get_instrument_activity_labels(
-    midi_files: List[str], 
-    mel_shape: Tuple[int, int], 
-    sr: int = 44100, 
-    hop_length: int = 512
-) -> np.ndarray:
-    """
-    根據一首曲目的多個 MIDI 文件，生成一個「樂器活動標註矩陣」。
-    這個矩陣的每一行代表一種樂器，每一列代表一個梅爾頻譜圖的時間幀。
-    矩陣中的值是 True 或 False，表示該樂器在該時間幀是否有音符在發聲。
-    """
-    n_frames = mel_shape[1]
-    # Collect all unique program numbers (instruments) in this track
-    instrument_programs = []
-    midi_instruments = []
-    for midi_path in midi_files:
-        midi = pretty_midi.PrettyMIDI(midi_path)
-        for inst in midi.instruments:
-            instrument_programs.append(inst.program)
-            midi_instruments.append(inst)
-    unique_programs = sorted(set(instrument_programs))
-    program_to_idx = {prog: i for i, prog in enumerate(unique_programs)}
-    activity = np.zeros((len(unique_programs), n_frames), dtype=bool)
-
-    # For each instrument, mark frames where any note is active
-    for inst in midi_instruments:
-        idx = program_to_idx[inst.program]
-        for note in inst.notes:
-            start_frame = int(note.start * sr / hop_length)
-            end_frame = int(note.end * sr / hop_length)
-            activity[idx, start_frame:end_frame] = True
-
-    return activity # activity: np.ndarray, 形狀為 (樂器數量, 幀數)，dtype=bool
+    return midi
