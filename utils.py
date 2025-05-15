@@ -6,6 +6,7 @@ from typing import List, Tuple
 import librosa
 import pretty_midi
 import yaml
+import json
 import soundfile as sf
 from tqdm import tqdm
 
@@ -39,3 +40,30 @@ def load_dataset(path: str) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(track_data)
+
+
+def read_flacs(path: str) -> np.ndarray:
+    vocal, sr = librosa.load(path, sr=None, mono=False)
+    if vocal.ndim > 1 and vocal.shape[0] > 1:
+        vocal_mono = librosa.to_mono(vocal)
+    else:
+        vocal_mono = vocal
+
+    mel = librosa.feature.melspectrogram(y=vocal_mono, sr=sr)
+    db_mel = librosa.power_to_db(mel, ref=np.max)
+
+    return db_mel
+
+
+def read_instruments_class(path: str) -> dict:
+    f = open(path, "r", encoding="utf-8")
+    instruments = json.load(f)
+    return instruments
+
+
+def read_metadata(path: str) -> dict:
+    raise NotImplementedError("YAML reading not implemented yet.")
+
+
+def read_midi(path: str) -> List[pretty_midi.Instrument]:
+    raise NotImplementedError("MIDI reading not implemented yet.")
