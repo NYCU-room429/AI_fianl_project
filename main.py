@@ -28,9 +28,13 @@ def process_track_data(row_dict):
         "mix": utils.read_flac(mix_path),
         "metadata": utils.read_metadata(metadata_path),
         "stems": {
-            stem_flac: utils.read_flac(stem_flac) for stem_flac in stem_file_paths
+            os.path.splitext(os.path.basename(stem_flac))[0]: utils.read_flac(stem_flac)
+            for stem_flac in stem_file_paths
         },
-        "midis": {midi_mid: utils.read_midi(midi_mid) for midi_mid in midi_file_paths},
+        "midis": {
+            os.path.splitext(os.path.basename(midi_mid))[0]: utils.read_midi(midi_mid)
+            for midi_mid in midi_file_paths
+        },
     }
     return track_dict
 
@@ -44,21 +48,21 @@ if __name__ == "__main__":
 
     row_dicts = train_data.to_dict(orient="records")
 
-    with Pool(processes=cpu_count()) as pool:
-        results = list(
-            tqdm(
-                pool.imap(process_track_data, row_dicts),
-                total=len(row_dicts),
-            )
-        )
+    # with Pool(processes=cpu_count()) as pool:
+    #     results = list(
+    #         tqdm(
+    #             pool.imap(process_track_data, row_dicts),
+    #             total=len(row_dicts),
+    #         )
+    #     )
 
-    track_dicts = [r for r in results if r is not None]
+    # track_dicts = [r for r in results if r is not None]
 
-    final_dict = {}
-    for d in track_dicts:
-        final_dict.update(d)
+    # final_dict = {}
+    # for d in track_dicts:
+    #     final_dict.update(d)
 
-    print(final_dict)
+    print(process_track_data(row_dicts[0]))
 
     # plt.figure(figsize=(10, 4))
     # librosa.display.specshow(

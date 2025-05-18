@@ -74,4 +74,4 @@ def read_metadata(path: str) -> dict:
 
 def read_midi(path: str) -> List[pretty_midi.Instrument]:
     midi = pretty_midi.PrettyMIDI(path)
-    return midi.instruments
+    return midi
