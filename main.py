@@ -43,6 +43,10 @@ if __name__ == "__main__":
     instruments_class = utils.read_instruments_class(
         "slakh-utils\\midi_inst_values\\general_midi_inst_0based.json"
     )
+
+    print("================")
+    print(len(instruments_class))
+    print("================")
     train_dir = "slakh2100_flac_redux\\slakh2100_flac_redux\\train"
     train_data = utils.load_dataset(train_dir)
 
@@ -64,11 +68,15 @@ if __name__ == "__main__":
 
     print(process_track_data(row_dicts[0]))
 
-    # plt.figure(figsize=(10, 4))
-    # librosa.display.specshow(
-    #     mel_spectrogram, sr=22050, hop_length=512, x_axis="time", y_axis="mel"
-    # )
-    # plt.colorbar(format="%+2.0f dB")
-    # plt.title("Mel-frequency Spectrogram")
-    # plt.tight_layout()
-    # plt.show()
+    track_dict = process_track_data(row_dicts[0])
+    track_id = list(track_dict.keys())[0]
+    mel_spectrogram = track_dict[track_id]["mix"]
+
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(
+        mel_spectrogram, sr=22050, hop_length=512, x_axis="time", y_axis="mel"
+    )
+    plt.colorbar(format="%+2.0f dB")
+    plt.title("Mel-frequency Spectrogram")
+    plt.tight_layout()
+    plt.show()
