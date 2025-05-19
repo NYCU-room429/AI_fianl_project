@@ -236,3 +236,84 @@ pip install tqdm matplotlib seaborn pyyaml
 4.  **`conversion.py`**: 備選，主要是在 `librosa` 處理 FLAC 遇到困難時。
 
 這些腳本為你提供了處理 Slakh2100 數據集的強大基礎，可以讓你專注於後續的特徵工程、模型設計和訓練。
+
+你提供的這個包含 `mix` 梅爾頻譜圖、`metadata` 和 `stems` 梅爾頻譜圖以及 `midis` (`PrettyMIDI` 物件) 的巨大字典結構，**不應該是你直接存儲到單個 NPY 檔案或直接傳遞給 `Dataset` 的最終格式。**
+
+**原因：**
+
+1.  **NPY 檔案通常用於存儲單個 NumPy 陣列。** 你不能直接將一個包含多種不同類型物件 (NumPy 陣列、字典、`PrettyMIDI` 物件) 的複雜 Python 字典保存為一個 NPY 檔案。
+2.  **NPZ 檔案可以存儲多個 NumPy 陣列，** 但它不適合直接存儲像 `PrettyMIDI` 這樣的自定義 Python 物件。你可以將 `PrettyMIDI` 物件序列化 (例如使用 `pickle`)，但這通常不是最佳實踐，且增加了複雜性。
+3.  **記憶體問題依舊：** 即使你設法將這個大字典序列化到磁碟，當你的 `Dataset` 把它完整讀回記憶體時，記憶體問題依然存在。
+
+**你應該存儲的是模型訓練直接需要的、已經處理好的、相對較小的數據單元。**
+
+**對於你的 CRNN 模型，每個訓練樣本通常是：**
+
+*   **輸入特徵 (X)：** 一個梅爾頻譜圖**片段** (例如，形狀 `(n_mels, N_FRAMES_PER_SEGMENT)` 的 NumPy 陣列)。
+*   **目標標籤 (Y)：** 與該特徵片段對應的幀級樂器活躍標籤**片段** (例如，形狀 `(N_FRAMES_PER_SEGMENT_OUTPUT, num_classes)` 的 NumPy 陣列，其中 `N_FRAMES_PER_SEGMENT_OUTPUT` 是與模型輸出對齊的幀數)。
+
+**所以，你的預處理流程應該是這樣的：**
+
+1.  **對於 Slakh2100 中的每一個音軌 (`TrackID`)：**
+    a.  **讀取 `mix.flac` 並計算完整的、統一格式的梅爾頻譜圖 (`full_mix_spectrogram`)。**
+        *   例如，得到一個形狀為 `(128, 20807)` 的 NumPy 陣列 (像你例子中的 `mix` 部分)。
+    b.  **讀取 `metadata.yaml`。**
+    c.  **讀取相關的 MIDI 檔案。**
+    d.  **使用 MIDI 和 metadata 生成與 `full_mix_spectrogram` 的每一幀對應的、完整的幀級樂器活躍標籤 (`full_track_labels`)。**
+        *   例如，得到一個形狀為 `(20807, num_classes)` 的 NumPy 陣列。
+    e.  **將 `full_mix_spectrogram` 切分成多個片段 `feature_segment_i`。**
+        *   每個 `feature_segment_i` 的形狀是 `(n_mels, N_FRAMES_PER_SEGMENT)` (例如 `(128, 215)`)。
+    f.  **同時，從 `full_track_labels` 中提取與每個 `feature_segment_i` 相對應的標籤片段 `label_segment_i`。**
+        *   每個 `label_segment_i` 的形狀是 `(N_FRAMES_PER_SEGMENT_OUTPUT, num_classes)` (例如 `(215, 8)`，假設輸出幀數與輸入片段幀數相同或已對齊)。
+    g.  **對於每一對 (`feature_segment_i`, `label_segment_i`)：**
+        *   **將這一對數據保存到一個獨立的檔案中。**
+        *   **推薦使用 `np.savez_compressed(filepath, feature=feature_segment_i, label=label_segment_i)`。**
+            *   `filepath` 可以是類似 `processed_data/TrackID_segment_i.npz`。
+            *   這樣每個 `.npz` 檔案都包含一個特徵片段和一個標籤片段。
+
+**總結你應該存儲什麼：**
+
+你**不應該**存儲你展示的那個巨大的 `final_dict`。
+
+你**應該**在預處理階段，迭代處理每個音軌，將其分解成多個：
+
+*   **梅爾頻譜圖的片段 (NumPy array)**
+*   **與之對應的幀級樂器活躍標籤的片段 (NumPy array)**
+
+然後將**每一對這樣的 (特徵片段, 標籤片段) 保存到一個單獨的檔案中** (例如 `.npz` 格式)。
+
+**你的 `Dataset` 類的作用：**
+
+*   `__init__`：接收一個包含所有這些預處理好的片段檔案 (`.npz` 檔案) 路徑的列表。
+*   `__len__`：返回片段檔案的總數。
+*   `__getitem__(idx)`：根據索引 `idx`：
+    1.  找到對應的片段檔案路徑。
+    2.  使用 `np.load()` 讀取該 `.npz` 檔案。
+    3.  從中提取 `feature` 陣列和 `label` 陣列。
+    4.  將它們轉換為 PyTorch 張量。
+    5.  調整特徵張量的形狀以匹配 CRNN 輸入 (例如，`unsqueeze(0)` 添加 channel 維度)。
+    6.  返回 `(feature_tensor, label_tensor)`。
+
+**示例檔案結構 (預處理後)：**
+
+```
+your_project_root/
+├── processed_data/
+│   ├── train/
+│   │   ├── Track00001_segment_0.npz
+│   │   ├── Track00001_segment_1.npz
+│   │   ├── ...
+│   │   ├── Track00002_segment_0.npz
+│   │   ├── ...
+│   ├── validation/
+│   │   ├── Track01876_segment_0.npz
+│   │   ├── ...
+│   └── test/
+│       ├── ...
+├── utils.py
+├── model.py
+├── train.py
+└── ...
+```
+
+這樣，你的程式在訓練時，只會根據需要從磁碟加載一小部分數據 (一個批次的片段)，記憶體使用會得到極大的優化。你展示的那個包含所有原始頻譜圖和 `PrettyMIDI` 物件的字典，只是你在預處理過程中的一個臨時狀態，不應該被持久化或直接用於 `Dataset`。
