@@ -112,7 +112,7 @@ MODEL_SAVE_PATH = 'instrument_crnn_model.pth'
 
 # Training parameters
 BATCH_SIZE = 16
-EPOCHS = 50
+EPOCHS = 5
 LEARNING_RATE = 0.001
 TEST_SPLIT_RATIO = 0.2 # Ratio for validation/test split
 RANDOM_STATE = 42 # For reproducible splits
@@ -199,8 +199,10 @@ if __name__ == "__main__":
 
     # --- 5. Create DataLoaders ---
     # Use os.cpu_count() for potentially faster loading
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() or 1, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=os.cpu_count() or 1, pin_memory=True)
+    # train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() or 1, pin_memory=True)
+    # val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=os.cpu_count() or 1, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, pin_memory=True)
     print(f"Using {os.cpu_count() or 1} worker processes for DataLoaders. Pin_memory enabled.")
 
 
@@ -242,7 +244,7 @@ if __name__ == "__main__":
 
             # Forward pass
             outputs = model(inputs)
-
+            print(f"Output time dimension (output.shape[1]): {outputs.shape[1]}")
             # Calculate loss
             loss = criterion(outputs, labels)
 

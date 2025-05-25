@@ -87,7 +87,7 @@ def get_target_instrument_classes(mapping_path: str) -> List[str]:
     try:
         instruments_mapping = utils.read_instruments_class(mapping_path)
 
-        classes = sorted(list(set(item['class'] for item in instruments_mapping.values())))
+        classes = sorted(list(set(item['name'] for item in instruments_mapping.values())))
         return classes
     except FileNotFoundError:
         print(f"Error: Instrument mapping file not found at {mapping_path}")
@@ -123,7 +123,6 @@ class MusicInstrumentDataset(Dataset):
         self.data = [] # Stores Mel spectrograms
         self.labels = [] # Stores multi-hot labels
         self.load_data() # Load data during initialization
-
         self.n_mels = N_MELS
         if len(self.data) > 0:
             self.n_mels = self.data[0].shape[1] # Shape is [1, N_MELS, MAX_MEL_FRAMES]
@@ -302,24 +301,29 @@ class CRNN(nn.Module):
 
         # CNN Forward
         x = self.cnn(x)
+        print(f"After CNN, x.shape = {x.shape}")
         # CNN output shape: (batch_size, final_channels, pooled_n_mels, pooled_time_frames)
 
         # Reshape for RNN
         # Permute dimensions to (batch_size, pooled_time_frames, final_channels, pooled_n_mels)
         x = x.permute(0, 3, 1, 2)
+        print(f"After permute, x.shape = {x.shape}")
         # Flatten the last two dimensions to get features per time step
         x = x.reshape(x.size(0), x.size(1), -1)
+        print(f"After reshape, x.shape = {x.shape}")
         # Shape now: (batch_size, sequence_length, input_size) for RNN
 
         # RNN Forward
         # rnn_out shape: (batch_size, 2 * RNN_HIDDEN_SIZE)
         rnn_out, _ = self.rnn(x)
+        print(f"After RNN, rnn_out.shape = {rnn_out.shape}")
 
         # Fully Connected Forward
         output = self.fc(rnn_out)
+        print(f"After FC, output.shape = {output.shape}")
         # Output shape: (batch_size, num_classes)
 
         # Apply Sigmoid activation for multi-label classification
         output = torch.sigmoid(output)
-
+        
         return output
