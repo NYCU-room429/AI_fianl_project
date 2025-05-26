@@ -1,53 +1,3 @@
-# import torch
-# from torch.utils.data import Dataset, DataLoader
-# import torch.nn as nn
-# import numpy as np
-# import os
-
-
-# class CRNNDataset(Dataset):
-#     def __init__(self, data_dir: str, transform=None):
-#         self.data_dir = data_dir
-#         self.transform = transform
-#         self.data = []
-#         self.labels = []
-#         self.load_data()
-
-#     def load_data(self):
-#         raise NotImplementedError("This method should be overridden by subclasses.")
-
-#     def __len__(self):
-#         return len(self.data)
-
-#     def __getitem__(self, idx):
-#         raise NotImplementedError("This method should be overridden by subclasses.")
-
-# # CRNN 的參數都還沒設定！
-# class CRNN(nn.Module):
-#     def __init__(self, ):
-#         super(CRNN, self).__init__()
-
-#         self.cnn = nn.Sequential(
-#             nn.Conv2d(in_channels = 1, out_channels = , kernel_size =, padding = ),
-#             nn.BatchNorm2d(),
-#             nn.ReLu(),
-#             nn.MaxPool2d(kernel_size = 2)
-#         )
-
-#         self.rnn = nn.GRU(
-#             input_size = ,
-#             hidden_size = ,
-#             num_layers = ,
-#             batch_first = True,
-#             bidirectional = True,
-#         )
-
-#         self.fc = nn.Linear(in_features = ,out_features = )
-
-#     def forward(self, x):
-#         x = self.cnn(x)
-# CRNN.py
-
 import os
 import numpy as np
 import pandas as pd
@@ -57,6 +7,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MultiLabelBinarizer
 from tqdm import tqdm
+from multiprocessing import Pool, cpu_count # 導入 Pool 和 cpu_count
 
 import utils
 
@@ -79,25 +30,130 @@ DROPOUT_RATE = 0.3  # CRNN的dropout rate，訓練的時候自行調整
 INSTRUMENT_MAPPING_PATH = "slakh-utils/midi_inst_values/general_midi_inst_0based.json"  # utils生出來的json路徑
 
 
-# 把樂器種類標上標籤
-def get_target_instrument_classes(mapping_path: str) -> List[str]:
-    """
-    Loads the instrument mapping and extracts a sorted list of unique instrument class names.
-    This list defines the order of classes for the multi-hot labels.
-    """
-    try:
-        instruments_mapping = utils.read_instruments_class(mapping_path)
 
-        classes = sorted(
-            list(set(item["name"] for item in instruments_mapping.values()))
-        )
-        return classes
-    except FileNotFoundError:
-        print(f"Error: Instrument mapping file not found at {mapping_path}")
-        return []
+
+
+
+# (保留之前的 parameter 和 get_target_instrument_classes 函數)
+
+# --- 新增的處理函數 ---
+# 確保這個函數是頂層函數，不是類的方法，這樣才能被多進程序列化
+def _process_single_track(args):
+    """
+    用於多進程處理單個音軌的函數。
+    接收一個包含所有必要數據的元組，返回處理後的梅爾頻譜圖和標籤。
+    """
+    row_data, max_mel_frames, instrument_classes_list, instruments_mapping, cnn_pool_size, cnn_channels = args
+
+    mix_path = row_data["mix"]
+    midi_files = row_data["midis"]
+
+    # 檢查音訊檔案與 MIDI 是否存在
+    if mix_path is None or not os.path.exists(mix_path):
+        return None # 返回 None 表示該樣本無效
+    if not midi_files:
+        return None
+
+    mel_spec_processed = None
+    pooled_labels = None
+
+    # 處理音訊，產生 Mel spectrogram
+    try:
+        mel_spec_db = utils.read_flac(mix_path) # 確保 read_flac 處理了 sr
+        current_frames = mel_spec_db.shape[1]
+        if current_frames > max_mel_frames:
+            mel_spec_processed = mel_spec_db[:, : max_mel_frames]
+        else:
+            padding_width = ((0, 0), (0, max_mel_frames - current_frames))
+            mel_spec_processed = np.pad(
+                mel_spec_db,
+                padding_width,
+                mode="constant",
+                constant_values=-100,
+            )
+        mel_spec_processed = np.expand_dims(mel_spec_processed, axis=0) # 增加 channel 維度
     except Exception as e:
-        print(f"Error reading instrument mapping file: {e}")
-        return []
+        # print(f"Error processing audio for track {row_data['track']}: {e}") # 考慮是否打印錯誤，多進程打印可能很亂
+        return None
+
+    # 計算每個 frame 的時間長度（秒）
+    # 這些參數與 utils.read_flac 中的 librosa 設置匹配
+    hop_length = 512
+    sr = 22050 # 這裡的 sr 必須與 read_flac 中實際使用的 sr 匹配
+    frame_duration = hop_length / sr
+
+    # 計算 CNN 下採樣後的時間步數
+    target_pooled_time_steps = max_mel_frames // (
+        cnn_pool_size[1] ** len(cnn_channels)
+    )
+
+    # 產生 frame-level 標籤
+    # 注意: generate_frame_level_labels 必須能在這個函數中訪問 (傳入或定義)
+    # 這裡直接把 generate_frame_level_labels 的邏輯放在這裡或作為一個獨立函數
+    # 為了簡潔，我們假設 generate_frame_level_labels 是 MusicInstrumentDataset 的一個靜態方法或工具函數
+    # 但更簡單的是在 _process_single_track 內部重新實現或將其作為閉包傳遞，這裡採用直接定義
+    
+    # 為了方便，我們把 MusicInstrumentDataset 中的 generate_frame_level_labels 複製到這裡
+    # 或者把它變成一個獨立的 helper function in CRNN.py 或 utils.py
+    def _generate_frame_level_labels_helper(midi_files, n_frames, instruments_mapping, frame_duration, instrument_classes):
+        frame_labels = np.zeros(
+            (n_frames, len(instrument_classes)), dtype=np.float32
+        )
+        for midi_path in midi_files:
+            if not os.path.exists(midi_path):
+                continue
+            try:
+                midi_data = utils.read_midi(midi_path)
+                for instrument in midi_data.instruments:
+                    program_str = str(instrument.program)
+                    if program_str in instruments_mapping:
+                        mapped_class = instruments_mapping[program_str]["name"]
+                        if mapped_class in instrument_classes:
+                            class_idx = instrument_classes.index(mapped_class)
+                            for note in instrument.notes:
+                                start_frame = int(note.start / frame_duration)
+                                end_frame = int(note.end / frame_duration)
+                                start_frame = max(0, min(start_frame, n_frames - 1))
+                                end_frame = max(0, min(end_frame, n_frames - 1))
+                                frame_labels[start_frame : end_frame + 1, class_idx] = 1.0
+            except Exception as e:
+                # print(f"Error processing MIDI for {midi_path}: {e}")
+                continue
+        return frame_labels
+
+    raw_frame_labels = _generate_frame_level_labels_helper(
+        midi_files, max_mel_frames, instruments_mapping, frame_duration, instrument_classes_list
+    )
+
+    # 將標籤下採樣到 CNN 輸出時間步數
+    # 為了避免在多進程中依賴 PyTorch 內部狀態，這裡複製 downsample_label 的邏輯
+    # 或者把它變成一個獨立的 helper function
+    def _downsample_label_helper(label, pooled_time_steps):
+        # label: (max_mel_frames, num_classes)
+        label_tensor = torch.from_numpy(label).float().T.unsqueeze(0).unsqueeze(0) # (1, 1, num_classes, max_mel_frames)
+        # 注意: 如果這裡在子進程中報錯，可能是因為 PyTorch 在子進程的初始化問題
+        # 可以考慮將這一步的 PyTorch 操作移到主進程收集結果後再做，或使用 numpy 實現池化
+        try:
+            pooled_tensor = torch.nn.functional.max_pool2d(
+                label_tensor, kernel_size=(1, label_tensor.shape[-1] // pooled_time_steps)
+            )
+        except RuntimeError as e:
+            # 可能是 PyTorch 初始化問題，或者 GPU 內存不足等
+            print(f"PyTorch RuntimeError in _downsample_label_helper: {e}. Falling back to NumPy pooling if available.")
+            # 退回到 NumPy 實現的池化（如果必要）
+            # 這裡簡化處理，如果 PyTorch 失敗就返回 None
+            return None 
+
+        pooled_np = pooled_tensor.squeeze(0).squeeze(0).T.numpy() # (pooled_time_steps, num_classes)
+        return pooled_np
+
+
+    pooled_labels = _downsample_label_helper(raw_frame_labels, target_pooled_time_steps)
+    
+    if mel_spec_processed is None or pooled_labels is None:
+        return None
+
+    return mel_spec_processed, pooled_labels.astype(np.float32)
 
 
 class MusicInstrumentDataset(Dataset):
@@ -107,285 +163,87 @@ class MusicInstrumentDataset(Dataset):
         instrument_mapping_path: str = INSTRUMENT_MAPPING_PATH,
         max_mel_frames: int = MAX_MEL_FRAMES,
     ):
-        """
-        Args:
-            dataframe: DataFrame returned by utils.load_dataset.
-            instrument_mapping_path: Path to the JSON instrument mapping file.
-            max_mel_frames: The target number of time frames for spectrogram padding/truncation.
-        """
         self.dataframe = dataframe
         self.max_mel_frames = max_mel_frames
 
-        # Load and define target instrument classes here
-        self.instrument_classes = get_target_instrument_classes(instrument_mapping_path)
+        self.instrument_classes = utils.get_target_instrument_classes(instrument_mapping_path)
         if not self.instrument_classes:
             raise ValueError(
                 f"Could not load or find instrument classes from {instrument_mapping_path}"
             )
 
-        self.mlb = MultiLabelBinarizer(classes=self.instrument_classes)
+        self.mlb = MultiLabelBinarizer(classes=self.instrument_classes) # 這個 mlb 其實沒用上，因為直接生成了多熱碼
 
-        self.data = []  # Stores Mel spectrograms
-        self.labels = []  # Stores multi-hot labels
-        self.load_data()  # Load data during initialization
-        self.n_mels = N_MELS
+        self.data = []
+        self.labels = []
+        self.load_data()
+        self.n_mels = N_MELS # 保持從常量獲取
         if len(self.data) > 0:
-            self.n_mels = self.data[0].shape[1]  # Shape is [1, N_MELS, MAX_MEL_FRAMES]
+            self.n_mels = self.data[0].shape[1]
 
         print(
             f"Dataset initialized with N_MELS={self.n_mels}, MAX_MEL_FRAMES={self.max_mel_frames}, num_classes={len(self.instrument_classes)}"
         )
-
-    def downsample_label(self, label, pooled_time_steps):
-        # label: (max_mel_frames, num_classes)
-        label = (
-            torch.from_numpy(label).float().T.unsqueeze(0).unsqueeze(0)
-        )  # (1, 1, num_classes, max_mel_frames)
-        pooled = torch.nn.functional.max_pool2d(
-            label, kernel_size=(1, label.shape[-1] // pooled_time_steps)
-        )
-        pooled = pooled.squeeze(0).squeeze(0).T  # (pooled_time_steps, num_classes)
-        return pooled.numpy()
+        # 移除 generate_frame_level_labels 和 downsample_label 類方法，因為它們現在作為 helper 函數在 _process_single_track 內部使用
 
     def load_data(self):
-        print(f"Loading and preprocessing data for {len(self.dataframe)} tracks...")
+        print(f"Loading and preprocessing data for {len(self.dataframe)} tracks using multiprocessing...")
 
         try:
-            # 讀取樂器對應表（instrument mapping）
             instruments_mapping = utils.read_instruments_class(INSTRUMENT_MAPPING_PATH)
         except Exception as e:
             print(f"Could not load instrument mapping: {e}")
             instruments_mapping = {}
 
-        for index, row in tqdm(
-            self.dataframe.iterrows(),
-            total=len(self.dataframe),
-            desc="Processing tracks",
-        ):
-            mix_path = row["mix"]
-            midi_files = row["midis"]
+        # 準備傳遞給子進程的參數列表
+        tasks = []
+        for index, row in self.dataframe.iterrows():
+            tasks.append((
+                row,
+                self.max_mel_frames,
+                self.instrument_classes, # 傳遞給子進程，避免重新加載
+                instruments_mapping,    # 傳遞給子進程
+                CNN_POOL_SIZE,          # 傳遞 CNN 參數
+                CNN_CHANNELS            # 傳遞 CNN 參數
+            ))
 
-            # 檢查音訊檔案與 MIDI 是否存在
-            if mix_path is None or not os.path.exists(mix_path):
-                continue
-            if not midi_files:
-                continue
+        # 使用多進程池
+        # 可以調整 processes 數量，通常是 cpu_count() - 1 或更多，根據記憶體和 CPU 核數
+        num_processes = os.cpu_count() or 1
+        print(f"Using {num_processes} processes for data loading.")
 
-            # 處理音訊，產生 Mel spectrogram
-            try:
-                mel_spec_db = utils.read_flac(mix_path)
-                current_frames = mel_spec_db.shape[1]
-                if current_frames > self.max_mel_frames:
-                    # 若時間軸過長則截斷
-                    mel_spec_processed = mel_spec_db[:, : self.max_mel_frames]
-                else:
-                    # 若時間軸不足則補零（pad）
-                    padding_width = ((0, 0), (0, self.max_mel_frames - current_frames))
-                    mel_spec_processed = np.pad(
-                        mel_spec_db,
-                        padding_width,
-                        mode="constant",
-                        constant_values=-100,
-                    )
-                # 增加 channel 維度，符合 CNN 輸入格式
-                mel_spec_processed = np.expand_dims(mel_spec_processed, axis=0)
-            except Exception as e:
-                continue
+        results = []
+        with Pool(processes=num_processes) as pool:
+            # imap_unordered 可以按順序返回結果，而 imap 則保證順序
+            # tqdm(iterable, ...) 用於顯示進度條
+            for result in tqdm(
+                pool.imap_unordered(_process_single_track, tasks),
+                total=len(tasks),
+                desc="Processing tracks"
+            ):
+                if result is not None:
+                    results.append(result)
 
-            # 計算每個 frame 的時間長度（秒）
-            hop_length = 512
-            sr = 22050
-            frame_duration = hop_length / sr
-
-            # 計算 CNN 下採樣後的時間步數
-            target_pooled_time_steps = self.max_mel_frames // (
-                CNN_POOL_SIZE[1] ** len(CNN_CHANNELS)
-            )
-            # 產生 frame-level 標籤，長度 = max_mel_frames
-            raw_frame_labels = self.generate_frame_level_labels(
-                midi_files, self.max_mel_frames, instruments_mapping, frame_duration
-            )  # shape: (max_mel_frames, num_classes)
-
-            # 將標籤下採樣到 CNN 輸出時間步數
-            pooled_labels = self.downsample_label(
-                raw_frame_labels, target_pooled_time_steps
-            )
-
-            # 儲存處理後的 Mel spectrogram 與標籤
+        # 收集所有有效結果
+        for mel_spec_processed, pooled_labels in results:
             self.data.append(mel_spec_processed)
-            self.labels.append(pooled_labels.astype(np.float32))
+            self.labels.append(pooled_labels)
 
         print(
             f"Finished data loading and preprocessing. Found {len(self.data)} valid samples."
         )
-        # 將 list 轉為 numpy array，方便後續使用
         self.data = np.array(self.data)
         self.labels = np.array(self.labels)
         print(f"Dataset shapes: X={self.data.shape}, y={self.labels.shape}")
-
-    # def load_data(self):
-    #     """
-    #     Processes the dataframe, reads audio and MIDI, computes features and labels.
-    #     Note: This loads all data into memory. For large datasets, consider loading on the fly in __getitem__.
-    #     """
-    #     print(f"Loading and preprocessing data for {len(self.dataframe)} tracks...")
-
-    #     # Load instrument mapping once
-    #     try:
-    #         instruments_mapping = utils.read_instruments_class(INSTRUMENT_MAPPING_PATH)
-    #     except Exception as e:
-    #         print(f"Could not load instrument mapping: {e}")
-    #         instruments_mapping = {}  # Use empty dict if loading fails
-
-    #     for index, row in tqdm(
-    #         self.dataframe.iterrows(),
-    #         total=len(self.dataframe),
-    #         desc="Processing tracks",
-    #     ):
-    #         mix_path = row["mix"]
-    #         midi_files = row["midis"]
-
-    #         if mix_path is None or not os.path.exists(mix_path):
-    #             continue
-
-    #         if not midi_files:
-    #             continue
-
-    #         # Process Audio
-    #         try:
-    #             # Use utils.read_flac which returns dB Mel spectrogram (N_MELS, time_frames)
-    #             mel_spec_db = utils.read_flac(mix_path)
-
-    #             # Pad or truncate the time dimension (axis=1)
-    #             current_frames = mel_spec_db.shape[1]
-    #             if current_frames > self.max_mel_frames:
-    #                 # Truncate time dimension
-    #                 mel_spec_processed = mel_spec_db[:, : self.max_mel_frames]
-    #             else:
-    #                 # Pad time dimension with a low dB value
-    #                 padding_width = ((0, 0), (0, self.max_mel_frames - current_frames))
-    #                 mel_spec_processed = np.pad(
-    #                     mel_spec_db,
-    #                     padding_width,
-    #                     mode="constant",
-    #                     constant_values=-100,
-    #                 )  # Pad with a low dB value
-
-    #             # PyTorch Conv2d expects [C, H, W]. Mel spec is [Freq, Time].
-    #             # So reshape to [1, N_MELS, max_mel_frames]
-    #             mel_spec_processed = np.expand_dims(
-    #                 mel_spec_processed, axis=0
-    #             )  # Add channel dimension
-
-    #         except Exception as e:
-    #             # print(f"Error processing audio for track {row['track']}: {e}")
-    #             continue  # Skip this track if audio processing fails
-
-    #         # Process Labels from MIDI
-    #         track_instruments_classes = set()
-    #         for midi_path in midi_files:
-    #             if not os.path.exists(midi_path):
-    #                 continue
-    #             try:
-    #                 midi_data = utils.read_midi(midi_path)
-    #                 for instrument in midi_data.instruments:
-    #                     program_str = str(instrument.program)
-    #                     if program_str in instruments_mapping:
-    #                         mapped_class = instruments_mapping[program_str]["class"]
-    #                         # Only add the class if it's in our target list
-    #                         if mapped_class in self.instrument_classes:
-    #                             track_instruments_classes.add(mapped_class)
-    #             except Exception as e:
-    #                 # print(f"Error processing MIDI for track {row['track']} ({midi_path}): {e}")
-    #                 continue  # Continue to next MIDI file if one fails
-
-    #         # Create multi-hot label vector
-    #         if not track_instruments_classes:
-    #             # If no valid instruments were found in MIDI that map to target classes, create an all-zero label
-    #             label_vector = np.zeros(len(self.instrument_classes), dtype=np.float32)
-    #         else:
-    #             # Use the fitted MultiLabelBinarizer
-    #             label_vector = self.mlb.fit_transform(
-    #                 [list(track_instruments_classes)]
-    #             )[0]
-    #             label_vector = label_vector.astype(
-    #                 np.float32
-    #             )  # Ensure float type for PyTorch
-
-    #         # Append the processed data and label if audio processing was successful
-    #         self.data.append(mel_spec_processed)
-    #         self.labels.append(label_vector)
-
-    #     print(
-    #         f"Finished data loading and preprocessing. Found {len(self.data)} valid samples."
-    #     )
-    #     # Convert lists to numpy arrays
-    #     self.data = np.array(self.data)
-    #     self.labels = np.array(self.labels)
-    #     print(f"Dataset shapes: X={self.data.shape}, y={self.labels.shape}")
-
-    def generate_frame_level_labels(
-        self, midi_files, n_frames, instruments_mapping, frame_duration
-    ):
-        """
-        產生 shape = (n_frames, num_classes) 的 frame-level 標籤
-        """
-        # 建立一個全零的 frame-level 標籤矩陣，行數為時間格數，列數為樂器種類數
-        frame_labels = np.zeros(
-            (n_frames, len(self.instrument_classes)), dtype=np.float32
-        )
-        # 逐一處理每個 MIDI 檔案
-        for midi_path in midi_files:
-            if not os.path.exists(midi_path):
-                continue
-            try:
-                # 讀取 MIDI 檔案
-                midi_data = utils.read_midi(midi_path)
-                # 逐一處理每個樂器軌
-                for instrument in midi_data.instruments:
-                    program_str = str(instrument.program)
-                    # 檢查樂器是否在 mapping 表內
-                    if program_str in instruments_mapping:
-                        mapped_class = instruments_mapping[program_str]["name"]
-                        # 檢查樂器是否為目標類別
-                        if mapped_class in self.instrument_classes:
-                            class_idx = self.instrument_classes.index(mapped_class)
-                            # 逐一處理該樂器的每個音符
-                            for note in instrument.notes:
-                                # 計算音符起訖對應的 frame index
-                                start_frame = int(note.start / frame_duration)
-                                end_frame = int(note.end / frame_duration)
-                                # 防止 index 超出範圍
-                                start_frame = max(0, min(start_frame, n_frames - 1))
-                                end_frame = max(0, min(end_frame, n_frames - 1))
-                                # 標記這段時間內該樂器為活躍（設為 1）
-                                frame_labels[start_frame : end_frame + 1, class_idx] = (
-                                    1.0
-                                )
-            except Exception as e:
-                # 若讀取失敗則跳過
-                continue
-        # 回傳 frame-level 標籤
-        return frame_labels
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        """
-        Retrieves a single sample (Mel spectrogram) and its label.
-        Converts numpy arrays to PyTorch tensors.
-        """
         mel_spec = self.data[idx]
         label = self.labels[idx]
-
-        # Convert numpy arrays to PyTorch tensors
-        # mel_spec_tensor shape: [1, N_MELS, MAX_MEL_FRAMES] (already added channel in load_data)
         mel_spec_tensor = torch.from_numpy(mel_spec)
         label_tensor = torch.from_numpy(label)
-
-        # No transform used in this example, but can be added here
-
         return mel_spec_tensor, label_tensor
 
 
@@ -480,6 +338,6 @@ class CRNN(nn.Module):
         # Output shape: (batch_size, pooled_time_steps, num_classes)
 
         # Apply Sigmoid activation for multi-label classification
-        output = torch.sigmoid(output)
+        # output = torch.sigmoid(output)
 
         return output

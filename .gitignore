@@ -23,6 +23,7 @@ slakh2100_flac_redux
 slakh2100_flac_redux.tar.gz
 ai_final
 ProcessData
+__pycache__
 
 # Directories potentially created on network shares
 .AppleDB

@@ -76,3 +76,23 @@ def read_metadata(path: str) -> dict:
 def read_midi(path: str) -> List[pretty_midi.Instrument]:
     midi = pretty_midi.PrettyMIDI(path)
     return midi
+
+# 把樂器種類標上標籤
+def get_target_instrument_classes(mapping_path: str) -> List[str]:
+    """
+    Loads the instrument mapping and extracts a sorted list of unique instrument class names.
+    This list defines the order of classes for the multi-hot labels.
+    """
+    try:
+        instruments_mapping = read_instruments_class(mapping_path)
+
+        classes = sorted(
+            list(set(item["name"] for item in instruments_mapping.values()))
+        )
+        return classes
+    except FileNotFoundError:
+        print(f"Error: Instrument mapping file not found at {mapping_path}")
+        return []
+    except Exception as e:
+        print(f"Error reading instrument mapping file: {e}")
+        return []
