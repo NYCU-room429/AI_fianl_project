@@ -206,12 +206,6 @@ class MusicInstrumentDataset(Dataset):
                 midi_files, self.max_mel_frames, instruments_mapping, frame_duration
             )  # shape: (max_mel_frames, num_classes)
 
-            print(
-                f"Track {index}: Raw frame labels sum: {np.sum(raw_frame_labels)}, shape: {raw_frame_labels.shape}"
-            )
-            if np.sum(raw_frame_labels) == 0:
-                print(f"WARNING: Track {index} has all zero raw labels!")
-
             # 將標籤下採樣到 CNN 輸出時間步數
             pooled_labels = self.downsample_label(
                 raw_frame_labels, target_pooled_time_steps
@@ -352,7 +346,7 @@ class MusicInstrumentDataset(Dataset):
                     program_str = str(instrument.program)
                     # 檢查樂器是否在 mapping 表內
                     if program_str in instruments_mapping:
-                        mapped_class = instruments_mapping[program_str]["class"]
+                        mapped_class = instruments_mapping[program_str]["name"]
                         # 檢查樂器是否為目標類別
                         if mapped_class in self.instrument_classes:
                             class_idx = self.instrument_classes.index(mapped_class)

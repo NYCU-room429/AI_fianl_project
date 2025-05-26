@@ -19,7 +19,7 @@ def load_dataset(path: str) -> pd.DataFrame:
         meta_path = os.path.join(track_dir, "metadata.yaml")
         stems_dir = os.path.join(track_dir, "stems")
         midi_dir = os.path.join(track_dir, "MIDI")
-        all_src_midi_dir = os.path.join(track_dir, "all_src_mid")
+        all_src_midi_dir = os.path.join(track_dir, "all_src.mid")
         # stem read
         stem_flacs = []
         for stem in os.listdir(stems_dir):
@@ -43,6 +43,7 @@ def load_dataset(path: str) -> pd.DataFrame:
                 "midis": midi_files,
             }
         )
+
     return pd.DataFrame(track_data)
 
 

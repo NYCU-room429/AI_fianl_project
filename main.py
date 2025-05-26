@@ -162,6 +162,7 @@ if __name__ == "__main__":
             instrument_mapping_path=INSTRUMENT_MAPPING_PATH,
             max_mel_frames=MAX_MEL_FRAMES,  # Pass the constant
         )
+
     except ValueError as e:
         print(f"Error creating dataset: {e}")
         exit()
