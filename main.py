@@ -85,37 +85,48 @@
 import numpy as np
 import pandas as pd
 import torch
-from tqdm import tqdm # For progress bars
+from tqdm import tqdm  # For progress bars
 import torch.nn as nn
 import torch.optim as optim
+
 # Use specific imports from utils and CRNN
 from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_score, recall_score, f1_score # Multi-label metrics
+from sklearn.metrics import (
+    precision_score,
+    recall_score,
+    f1_score,
+)  # Multi-label metrics
+
 # Remove unused imports: StandardScaler, mean_squared_error, mean_absolute_error, r2_score, multiprocessing, Pool, cpu_count, scipy.stats, matplotlib.pyplot, librosa
 
-import os # Keep os for path handling and cpu_count
+import os  # Keep os for path handling and cpu_count
 
-import utils # Import your utils.py script
-from CRNN import MusicInstrumentDataset, CRNN, INSTRUMENT_MAPPING_PATH, MAX_MEL_FRAMES # Import classes and necessary constants from CRNN.py
+import utils  # Import your utils.py script
+from CRNN import (
+    MusicInstrumentDataset,
+    CRNN,
+    INSTRUMENT_MAPPING_PATH,
+    MAX_MEL_FRAMES,
+)  # Import classes and necessary constants from CRNN.py
 
 
 # --- Configuration Parameters ---
 # Paths
 # <--- *** Change this path to your dataset root directory ***
-DATASET_ROOT_PATH = 'slakh2100_flac_redux/slakh2100_flac_redux/train'
+DATASET_ROOT_PATH = "slakh2100_flac_redux/slakh2100_flac_redux/train"
 # INSTRUMENT_MAPPING_PATH is imported from CRNN.py
 
-MODEL_SAVE_PATH = 'instrument_crnn_model.pth'
+MODEL_SAVE_PATH = "instrument_crnn_model.pth"
 
 # Data parameters (Constants like MAX_MEL_FRAMES are imported from CRNN.py)
 
 # Training parameters
 BATCH_SIZE = 16
-EPOCHS = 5
+EPOCHS = 50
 LEARNING_RATE = 0.001
-TEST_SPLIT_RATIO = 0.2 # Ratio for validation/test split
-RANDOM_STATE = 42 # For reproducible splits
+TEST_SPLIT_RATIO = 0.2  # Ratio for validation/test split
+RANDOM_STATE = 42  # For reproducible splits
 
 
 # --- Main Execution ---
@@ -134,48 +145,58 @@ if __name__ == "__main__":
     print(f"Found {len(dataset_df)} tracks.")
 
     if len(dataset_df) == 0:
-        print("No tracks found in the dataset directory. Please check DATASET_ROOT_PATH.")
+        print(
+            "No tracks found in the dataset directory. Please check DATASET_ROOT_PATH."
+        )
         exit()
 
     # --- 2. Create Dataset Instance and Load Data ---
     # The MusicInstrumentDataset class handles reading audio/midi and preprocessing into memory
-    print(f"\nCreating and loading data into MusicInstrumentDataset (MAX_MEL_FRAMES={MAX_MEL_FRAMES})...")
+    print(
+        f"\nCreating and loading data into MusicInstrumentDataset (MAX_MEL_FRAMES={MAX_MEL_FRAMES})..."
+    )
     try:
         # Pass the dataframe and mapping path to the Dataset
         full_dataset = MusicInstrumentDataset(
             dataframe=dataset_df,
             instrument_mapping_path=INSTRUMENT_MAPPING_PATH,
-            max_mel_frames=MAX_MEL_FRAMES # Pass the constant
+            max_mel_frames=MAX_MEL_FRAMES,  # Pass the constant
         )
     except ValueError as e:
         print(f"Error creating dataset: {e}")
         exit()
     except FileNotFoundError as e:
-         print(f"Error: Required file not found during dataset creation - {e}")
-         exit()
+        print(f"Error: Required file not found during dataset creation - {e}")
+        exit()
     except Exception as e:
         print(f"An unexpected error occurred during dataset creation: {e}")
         exit()
 
-
     if len(full_dataset) == 0:
-        print("No valid data samples prepared by the dataset. Check file availability, paths, and processing errors in utils and dataset loading.")
+        print(
+            "No valid data samples prepared by the dataset. Check file availability, paths, and processing errors in utils and dataset loading."
+        )
         exit()
 
     # --- 3. Determine Model Input/Output Shapes from Dataset ---
     # Get shapes from the first sample after data loading
     # Dataset item shape is [1, N_MELS, MAX_MEL_FRAMES] for input, [num_classes] for label
     sample_input, sample_label = full_dataset[0]
-    input_channel = sample_input.shape[0] # Should be 1
+    input_channel = sample_input.shape[0]  # Should be 1
     n_mels = sample_input.shape[1]
-    max_mel_frames_actual = sample_input.shape[2] # This should match MAX_MEL_FRAMES
-    num_classes = len(sample_label) # Number of output classes = number of instrument classes
+    max_mel_frames_actual = sample_input.shape[2]  # This should match MAX_MEL_FRAMES
+    pooled_time_steps = sample_label.shape[0]  # 125
+    num_classes = sample_label.shape[
+        1
+    ]  # Number of output classes = number of instrument classes
 
-    print(f"\nModel Input Shape (C, H, W): ({input_channel}, {n_mels}, {max_mel_frames_actual})")
+    print(
+        f"\nModel Input Shape (C, H, W): ({input_channel}, {n_mels}, {max_mel_frames_actual})"
+    )
     print(f"Number of output classes: {num_classes}")
+    print(f"Pooled time steps: {pooled_time_steps}")
     # Optionally print instrument classes defined by the dataset
     # print(f"Target instrument classes: {full_dataset.instrument_classes}")
-
 
     # --- 4. Split Dataset ---
     # Get indices for splitting
@@ -201,10 +222,23 @@ if __name__ == "__main__":
     # Use os.cpu_count() for potentially faster loading
     # train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() or 1, pin_memory=True)
     # val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=os.cpu_count() or 1, pin_memory=True)
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, pin_memory=True)
-    print(f"Using {os.cpu_count() or 1} worker processes for DataLoaders. Pin_memory enabled.")
-
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=0,
+        pin_memory=True,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=True,
+    )
+    print(
+        f"Using {os.cpu_count() or 1} worker processes for DataLoaders. Pin_memory enabled."
+    )
 
     # --- 6. Build the CRNN Model ---
     print("\nBuilding CRNN model...")
@@ -213,7 +247,7 @@ if __name__ == "__main__":
         input_channel=input_channel,
         n_mels=n_mels,
         max_mel_frames=max_mel_frames_actual,
-        num_classes=num_classes
+        num_classes=num_classes,
     )
     print("Model built.")
 
@@ -231,9 +265,11 @@ if __name__ == "__main__":
     print("\nStarting model training...")
     for epoch in range(EPOCHS):
         # --- Training Phase ---
-        model.train() # Set model to training mode
+        model.train()  # Set model to training mode
         running_loss = 0.0
-        train_loader_tqdm = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Train]", leave=False)
+        train_loader_tqdm = tqdm(
+            train_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Train]", leave=False
+        )
 
         for inputs, labels in train_loader_tqdm:
             # Move data to the appropriate device
@@ -244,7 +280,7 @@ if __name__ == "__main__":
 
             # Forward pass
             outputs = model(inputs)
-            print(f"Output time dimension (output.shape[1]): {outputs.shape[1]}")
+
             # Calculate loss
             loss = criterion(outputs, labels)
 
@@ -253,55 +289,123 @@ if __name__ == "__main__":
             optimizer.step()
 
             running_loss += loss.item() * inputs.size(0)
-            train_loader_tqdm.set_postfix(loss=loss.item()) # Display current batch loss
+            train_loader_tqdm.set_postfix(
+                loss=loss.item()
+            )  # Display current batch loss
 
         epoch_loss = running_loss / len(train_dataset)
         print(f"Epoch {epoch+1}/{EPOCHS}, Training Loss: {epoch_loss:.4f}")
 
+        # # --- Validation Phase ---
+        # model.eval()  # Set model to evaluation mode
+        # val_running_loss = 0.0
+        # all_labels = []  # Store true labels
+        # all_predictions = []  # Store predicted probabilities
+
+        # val_loader_tqdm = tqdm(
+        #     val_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Val  ]", leave=False
+        # )
+
+        # with torch.no_grad():  # No gradient calculation during validation
+        #     for inputs, labels in val_loader_tqdm:
+        #         inputs, labels = inputs.to(device), labels.to(device)
+
+        #         outputs = model(inputs)  # Outputs are probabilities after sigmoid
+
+        #         loss = criterion(outputs, labels)
+        #         val_running_loss += loss.item() * inputs.size(0)
+
+        #         all_labels.append(labels.cpu().numpy())
+        #         all_predictions.append(outputs.cpu().numpy())  # Append probabilities
+
+        # val_epoch_loss = val_running_loss / len(val_dataset)
+
+        # # Calculate multi-label metrics from collected labels and predictions
+        # all_labels = np.concatenate(all_labels, axis=0)
+        # all_predictions = np.concatenate(all_predictions, axis=0)
+
+        # # Apply a threshold (e.g., 0.5) to get binary predictions for metrics
+        # THRESHOLD = 0.5
+        # binary_predictions = (all_predictions > THRESHOLD).astype(float)
+
+        # # Calculate metrics (using 'micro' average as an example)
+        # val_precision_micro = precision_score(
+        #     all_labels, binary_predictions, average="micro", zero_division=0
+        # )
+        # val_recall_micro = recall_score(
+        #     all_labels, binary_predictions, average="micro", zero_division=0
+        # )
+        # val_f1_micro = f1_score(
+        #     all_labels, binary_predictions, average="micro", zero_division=0
+        # )
+        # # Calculate binary accuracy (element-wise match rate)
+        # val_binary_accuracy = np.mean(all_labels == binary_predictions)
+
+        # print(
+        #     f"Epoch {epoch+1}/{EPOCHS}, Validation Loss: {val_epoch_loss:.4f}, "
+        #     f"Val Binary Acc: {val_binary_accuracy:.4f}, "
+        #     f"Val Micro Prec: {val_precision_micro:.4f}, "
+        #     f"Val Micro Rec: {val_recall_micro:.4f}, "
+        #     f"Val Micro F1: {val_f1_micro:.4f}"
+        # )
         # --- Validation Phase ---
-        model.eval() # Set model to evaluation mode
+        model.eval()  # 設定模型為驗證模式
         val_running_loss = 0.0
-        all_labels = [] # Store true labels
-        all_predictions = [] # Store predicted probabilities
+        all_labels = []  # 收集所有真實標籤
+        all_predictions = []  # 收集所有預測機率
 
-        val_loader_tqdm = tqdm(val_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Val  ]", leave=False)
+        val_loader_tqdm = tqdm(
+            val_loader, desc=f"Epoch {epoch+1}/{EPOCHS} [Val  ]", leave=False
+        )
 
-        with torch.no_grad(): # No gradient calculation during validation
+        with torch.no_grad():  # 驗證階段不計算梯度
             for inputs, labels in val_loader_tqdm:
                 inputs, labels = inputs.to(device), labels.to(device)
 
-                outputs = model(inputs) # Outputs are probabilities after sigmoid
+                outputs = model(inputs)  # 輸出為 sigmoid 機率
 
                 loss = criterion(outputs, labels)
                 val_running_loss += loss.item() * inputs.size(0)
 
                 all_labels.append(labels.cpu().numpy())
-                all_predictions.append(outputs.cpu().numpy()) # Append probabilities
-
+                all_predictions.append(outputs.cpu().numpy())  # 收集機率
 
         val_epoch_loss = val_running_loss / len(val_dataset)
 
-        # Calculate multi-label metrics from collected labels and predictions
-        all_labels = np.concatenate(all_labels, axis=0)
+        # 將 batch 合併
+        all_labels = np.concatenate(
+            all_labels, axis=0
+        )  # (N, pooled_time_steps, num_classes)
         all_predictions = np.concatenate(all_predictions, axis=0)
 
-        # Apply a threshold (e.g., 0.5) to get binary predictions for metrics
+        # 展平成 (N * pooled_time_steps, num_classes) 以符合 sklearn 格式
+        all_labels_flat = all_labels.reshape(-1, all_labels.shape[-1])
+        all_predictions_flat = all_predictions.reshape(-1, all_predictions.shape[-1])
+
+        # 機率轉為二值
         THRESHOLD = 0.5
-        binary_predictions = (all_predictions > THRESHOLD).astype(float)
+        binary_predictions_flat = (all_predictions_flat > THRESHOLD).astype(float)
 
-        # Calculate metrics (using 'micro' average as an example)
-        val_precision_micro = precision_score(all_labels, binary_predictions, average='micro', zero_division=0)
-        val_recall_micro = recall_score(all_labels, binary_predictions, average='micro', zero_division=0)
-        val_f1_micro = f1_score(all_labels, binary_predictions, average='micro', zero_division=0)
-        # Calculate binary accuracy (element-wise match rate)
-        val_binary_accuracy = np.mean(all_labels == binary_predictions)
+        # 計算多標籤指標
+        val_precision_micro = precision_score(
+            all_labels_flat, binary_predictions_flat, average="micro", zero_division=0
+        )
+        val_recall_micro = recall_score(
+            all_labels_flat, binary_predictions_flat, average="micro", zero_division=0
+        )
+        val_f1_micro = f1_score(
+            all_labels_flat, binary_predictions_flat, average="micro", zero_division=0
+        )
+        # element-wise 二元準確率
+        val_binary_accuracy = np.mean(all_labels_flat == binary_predictions_flat)
 
-
-        print(f"Epoch {epoch+1}/{EPOCHS}, Validation Loss: {val_epoch_loss:.4f}, "
-              f"Val Binary Acc: {val_binary_accuracy:.4f}, "
-              f"Val Micro Prec: {val_precision_micro:.4f}, "
-              f"Val Micro Rec: {val_recall_micro:.4f}, "
-              f"Val Micro F1: {val_f1_micro:.4f}")
+        print(
+            f"Epoch {epoch+1}/{EPOCHS}, Validation Loss: {val_epoch_loss:.4f}, "
+            f"Val Binary Acc: {val_binary_accuracy:.4f}, "
+            f"Val Micro Prec: {val_precision_micro:.4f}, "
+            f"Val Micro Rec: {val_recall_micro:.4f}, "
+            f"Val Micro F1: {val_f1_micro:.4f}"
+        )
 
     print("\nTraining finished.")
 
