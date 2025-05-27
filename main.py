@@ -167,16 +167,16 @@ if __name__ == "__main__":
     )
     print("Model built.")
 
-    
-
     # --- 7. Set up Device (CPU/GPU) ---
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     print(f"Using device for training: {device}")
 
-        # --- 計算 POS_WEIGHT ---
+    # --- 計算 POS_WEIGHT ---
     print("\nCalculating pos_weight for BCELoss...")
-    num_positives_per_class = np.zeros(num_classes, dtype=np.float64) # 使用 float64 避免溢出
+    num_positives_per_class = np.zeros(
+        num_classes, dtype=np.float64
+    )  # 使用 float64 避免溢出
     num_negatives_per_class = np.zeros(num_classes, dtype=np.float64)
 
     # 為了計算 pos_weight，我們需要迭代一次 train_loader
@@ -189,50 +189,67 @@ if __name__ == "__main__":
     # 獲取訓練集的所有標籤:
     # full_dataset.labels 的形狀是 (total_samples, pooled_time_steps, num_classes)
     # train_indices 是訓練樣本在 full_dataset 中的索引
-    if hasattr(full_dataset, 'labels') and isinstance(full_dataset.labels, np.ndarray):
+    if hasattr(full_dataset, "labels") and isinstance(full_dataset.labels, np.ndarray):
         train_labels_all_samples = full_dataset.labels[train_indices]
         # train_labels_all_samples shape: (num_train_samples, pooled_time_steps, num_classes)
 
         for c in range(num_classes):
             num_positives_per_class[c] = np.sum(train_labels_all_samples[:, :, c] == 1)
             num_negatives_per_class[c] = np.sum(train_labels_all_samples[:, :, c] == 0)
-        
+
         total_label_entries = train_labels_all_samples.size
         print(f"Total label entries processed for pos_weight: {total_label_entries}")
 
-    else: # 如果 full_dataset.labels 不可用或格式不對，則退回到遍歷 DataLoader (較慢)
-        print("Warning: full_dataset.labels not directly accessible or not a NumPy array. Falling back to iterating train_loader for pos_weight calculation (slower).")
-        for _, batch_labels in tqdm(train_loader, desc="Counting labels for pos_weight"):
+    else:  # 如果 full_dataset.labels 不可用或格式不對，則退回到遍歷 DataLoader (較慢)
+        print(
+            "Warning: full_dataset.labels not directly accessible or not a NumPy array. Falling back to iterating train_loader for pos_weight calculation (slower)."
+        )
+        for _, batch_labels in tqdm(
+            train_loader, desc="Counting labels for pos_weight"
+        ):
             batch_labels_np = batch_labels.cpu().numpy()
             for c in range(num_classes):
                 num_positives_per_class[c] += np.sum(batch_labels_np[:, :, c] == 1)
                 num_negatives_per_class[c] += np.sum(batch_labels_np[:, :, c] == 0)
-    
+
     print(f"Number of positive samples per class: {num_positives_per_class}")
     print(f"Number of negative samples per class: {num_negatives_per_class}")
 
-    pos_weight_values = np.ones(num_classes, dtype=np.float32) # 確保是 float32
+    pos_weight_values = np.ones(num_classes, dtype=np.float32)  # 確保是 float32
     for c in range(num_classes):
-        if num_positives_per_class[c] > 0: # 確保分母不為0
-             # 如果 num_negatives_per_class[c] 為0，結果會是0，這不合理。
-             # 應該是 num_negatives / num_positives。如果 num_negatives 是0，說明這個類別總是正的，pos_weight 應該小。
-             # 如果 num_positives 是0，pos_weight 應該大或未定義。
+        if num_positives_per_class[c] > 0:  # 確保分母不為0
+            # 如果 num_negatives_per_class[c] 為0，結果會是0，這不合理。
+            # 應該是 num_negatives / num_positives。如果 num_negatives 是0，說明這個類別總是正的，pos_weight 應該小。
+            # 如果 num_positives 是0，pos_weight 應該大或未定義。
             if num_negatives_per_class[c] > 0:
-                pos_weight_values[c] = num_negatives_per_class[c] / num_positives_per_class[c]
-            else: # 類別 c 總是正的 (沒有負樣本)
-                pos_weight_values[c] = 1.0 / (num_positives_per_class[c] + 1e-6) # 給一個很小的權重，避免為0
-                print(f"Warning: Class {c} has no negative samples. pos_weight set to a small value.")
-        else: # 類別 c 沒有正樣本
-            pos_weight_values[c] = np.sum(num_negatives_per_class) / (np.sum(num_positives_per_class) + 1e-6) if np.sum(num_positives_per_class) > 0 else 1.0 # 使用全局比例或設為1
-            print(f"Warning: Class {c} has no positive samples. pos_weight set based on global ratio or to 1.")
+                pos_weight_values[c] = (
+                    num_negatives_per_class[c] / num_positives_per_class[c]
+                )
+            else:  # 類別 c 總是正的 (沒有負樣本)
+                pos_weight_values[c] = 1.0 / (
+                    num_positives_per_class[c] + 1e-6
+                )  # 給一個很小的權重，避免為0
+                print(
+                    f"Warning: Class {c} has no negative samples. pos_weight set to a small value."
+                )
+        else:  # 類別 c 沒有正樣本
+            pos_weight_values[c] = (
+                np.sum(num_negatives_per_class)
+                / (np.sum(num_positives_per_class) + 1e-6)
+                if np.sum(num_positives_per_class) > 0
+                else 1.0
+            )  # 使用全局比例或設為1
+            print(
+                f"Warning: Class {c} has no positive samples. pos_weight set based on global ratio or to 1."
+            )
 
     print(f"Calculated pos_weight values: {pos_weight_values}")
     pos_weight_tensor = torch.tensor(pos_weight_values, dtype=torch.float).to(device)
     # --- POS_WEIGHT 計算結束 ---
-    
+
     # --- 8. Define Loss Function and Optimizer ---
     # Binary Cross-Entropy Loss for multi-label classification
-    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor) # <--- 改為這個
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)  # <--- 改為這個
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     # --- 9. Training Loop ---
@@ -305,7 +322,7 @@ if __name__ == "__main__":
         all_predictions_flat = all_predictions.reshape(-1, all_predictions.shape[-1])
 
         # 機率轉為二值
-        THRESHOLD = 0.5
+        THRESHOLD = 0.1  # 可以根據需要調整閾值
         binary_predictions_flat = (all_predictions_flat > THRESHOLD).astype(float)
 
         # 計算多標籤指標

@@ -32,17 +32,28 @@ def read_midi(path: str):
 def midi_to_label(midi, n_frames, frame_duration, instruments_mapping, instrument_classes):
     label = np.zeros((n_frames, len(instrument_classes)), dtype=np.float32)
     for instrument in midi.instruments:
-        program_str = str(instrument.program)
-        if program_str in instruments_mapping:
-            mapped_class = instruments_mapping[program_str]["name"]
-            if mapped_class in instrument_classes:
-                class_idx = instrument_classes.index(mapped_class)
+        if instrument.is_drum:
+            # 處理鼓軌，對應到 "Drums"
+            if "Drums" in instrument_classes:
+                class_idx = instrument_classes.index("Drums")
                 for note in instrument.notes:
                     start_frame = int(note.start / frame_duration)
                     end_frame = int(note.end / frame_duration)
                     start_frame = max(0, min(start_frame, n_frames - 1))
                     end_frame = max(0, min(end_frame, n_frames - 1))
                     label[start_frame:end_frame+1, class_idx] = 1.0
+        else:
+            program_str = str(instrument.program)
+            if program_str in instruments_mapping:
+                mapped_class = instruments_mapping[program_str]["name"]
+                if mapped_class in instrument_classes:
+                    class_idx = instrument_classes.index(mapped_class)
+                    for note in instrument.notes:
+                        start_frame = int(note.start / frame_duration)
+                        end_frame = int(note.end / frame_duration)
+                        start_frame = max(0, min(start_frame, n_frames - 1))
+                        end_frame = max(0, min(end_frame, n_frames - 1))
+                        label[start_frame:end_frame+1, class_idx] = 1.0
     return label
 
 def scan_tracks(dataset_root):

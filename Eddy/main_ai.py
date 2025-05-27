@@ -40,6 +40,11 @@ if os.path.exists(POS_WEIGHT_PATH):
     pos_weight = torch.tensor(np.load(POS_WEIGHT_PATH), dtype=torch.float32)
     print(f"[INFO] Loaded pos_weight from {POS_WEIGHT_PATH}")
     print("pos_weight:", pos_weight)
+    pos_weight = np.clip(pos_weight, 0.5, 10)
+    np.save(POS_WEIGHT_PATH, pos_weight)
+    print(f"[INFO] Clipped and saved pos_weight to {POS_WEIGHT_PATH}")
+    print("clip 後 pos_weight:", pos_weight)
+    pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
 else:
     def compute_pos_weight(dataset):
         total = np.zeros(n_classes)
@@ -56,13 +61,14 @@ else:
         n_mels=N_MELS, max_frames=MAX_FRAMES, train=True
     )
     pos_weight = compute_pos_weight(temp_train_set)
+    pos_weight = np.clip(pos_weight, 0.5, 10)  # 建議 clip 範圍
     np.save(POS_WEIGHT_PATH, pos_weight)
     pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
     print(f"[INFO] Computed and saved pos_weight to {POS_WEIGHT_PATH}")
     print("pos_weight:", pos_weight)
 
 # === 標準化一致性：只計算一次並存檔 ===
-MEAN_STD_PATH = "mel_global_mean_std_1000.npy"
+MEAN_STD_PATH = "mel_global_mean_std_BCEW_D.npy"
 if os.path.exists(MEAN_STD_PATH):
     mean_std = np.load(MEAN_STD_PATH)
     global_mean, global_std = mean_std[0], mean_std[1]
@@ -140,8 +146,8 @@ class FocalLoss(nn.Module):
         else:
             return loss.sum()
 
-# 初始化
-criterion = FocalLoss(gamma=2, pos_weight=pos_weight.to(device))
+# 初始化 BCEWithLogitsLoss + pos_weight
+criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight.to(device))
 model = CRNN(N_MELS, n_classes).to(device)
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -188,33 +194,35 @@ for epoch in range(EPOCHS):
             if f1 > best_f1:
                 best_f1 = f1
                 best_ths[i] = th
-    # === 儲存 best_ths ===
-    np.save("best_ths_1000.npy", best_ths)
+    np.save("best_ths_BCEW_D.npy", best_ths)
 
     final_pred = (all_preds > best_ths).astype(int)
 
-    # === 新增各種指標 ===
     # === 新增各種指標 ===
     val_epoch_loss = val_loss / len(val_loader)
     val_binary_accuracy = (final_pred == all_labels).mean()
     val_precision_micro = precision_score(all_labels, final_pred, average="micro", zero_division=0)
     val_recall_micro = recall_score(all_labels, final_pred, average="micro", zero_division=0)
     val_f1_micro = f1_score(all_labels, final_pred, average="micro", zero_division=0)
+    val_f1_macro = f1_score(all_labels, final_pred, average="macro", zero_division=0)
+    per_class_f1 = f1_score(all_labels, final_pred, average=None, zero_division=0)
 
     print(
         f"Epoch {epoch+1}/{EPOCHS}, Validation Loss: {val_epoch_loss:.4f}, "
         f"Val Binary Acc: {val_binary_accuracy:.4f}, "
         f"Val Micro Prec: {val_precision_micro:.4f}, "
         f"Val Micro Rec: {val_recall_micro:.4f}, "
-        f"Val Micro F1: {val_f1_micro:.4f}"
+        f"Val Micro F1: {val_f1_micro:.4f}, "
+        f"Val Macro F1: {val_f1_macro:.4f}"
     )
+    print(f"Per-class F1: {per_class_f1}")
     print(f"==> Best per-class threshold: {best_ths}, Best F1: {val_f1_micro:.4f}")
 
-    # 修正：只保存歷史最佳 F1 的模型
     if val_f1_micro > global_best_f1:
         global_best_f1 = val_f1_micro
-        torch.save(model.state_dict(), "best_model_1000.pth")
-        np.save("best_ths.npy", best_ths)
+        torch.save(model.state_dict(), "best_model_BCEW_D.pth")
+        np.save("best_ths_BCEW_best_D.npy", best_ths)
         print(f"[INFO] Saved best model at epoch {epoch+1} with F1={global_best_f1:.4f}")
 
-torch.save(model.state_dict(), "crnn_model_1000.pth")
+torch.save(model.state_dict(), "crnn_model_BCEW_D.pth")
+# ...existing code...
