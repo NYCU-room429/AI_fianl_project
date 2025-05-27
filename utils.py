@@ -1,12 +1,11 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import List, Tuple
+from typing import List
 import librosa
 import pretty_midi
 import yaml
 import json
-import soundfile as sf
 from tqdm import tqdm
 
 
@@ -76,6 +75,7 @@ def read_metadata(path: str) -> dict:
 def read_midi(path: str) -> List[pretty_midi.Instrument]:
     midi = pretty_midi.PrettyMIDI(path)
     return midi
+
 
 # 把樂器種類標上標籤
 def get_target_instrument_classes(mapping_path: str) -> List[str]:

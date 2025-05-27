@@ -1,13 +1,12 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import List, Tuple
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MultiLabelBinarizer
 from tqdm import tqdm
-from multiprocessing import Pool, cpu_count  # 導入 Pool 和 cpu_count
+from multiprocessing import Pool  # 導入 Pool 和 cpu_count
 
 import utils
 
@@ -91,14 +90,6 @@ def _process_single_track(args):
     # 計算 CNN 下採樣後的時間步數
     target_pooled_time_steps = max_mel_frames // (cnn_pool_size[1] ** len(cnn_channels))
 
-    # 產生 frame-level 標籤
-    # 注意: generate_frame_level_labels 必須能在這個函數中訪問 (傳入或定義)
-    # 這裡直接把 generate_frame_level_labels 的邏輯放在這裡或作為一個獨立函數
-    # 為了簡潔，我們假設 generate_frame_level_labels 是 MusicInstrumentDataset 的一個靜態方法或工具函數
-    # 但更簡單的是在 _process_single_track 內部重新實現或將其作為閉包傳遞，這裡採用直接定義
-
-    # 為了方便，我們把 MusicInstrumentDataset 中的 generate_frame_level_labels 複製到這裡
-    # 或者把它變成一個獨立的 helper function in CRNN.py 或 utils.py
     def _generate_frame_level_labels_helper(
         midi_files, n_frames, instruments_mapping, frame_duration, instrument_classes
     ):
@@ -135,9 +126,6 @@ def _process_single_track(args):
         instrument_classes_list,
     )
 
-    # 將標籤下採樣到 CNN 輸出時間步數
-    # 為了避免在多進程中依賴 PyTorch 內部狀態，這裡複製 downsample_label 的邏輯
-    # 或者把它變成一個獨立的 helper function
     def _downsample_label_helper(label, pooled_time_steps):
         # label: (max_mel_frames, num_classes)
         label_tensor = (
