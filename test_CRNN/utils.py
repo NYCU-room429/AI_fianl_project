@@ -1,9 +1,17 @@
 import librosa
 import numpy as np
 import pretty_midi
-import json
+import json, yaml
 import matplotlib.pyplot as plt
 
+def get_rendered_stems(metadata_path):
+    with open(metadata_path, 'r', encoding='utf-8') as f:
+        meta = yaml.safe_load(f)
+    rendered_stems = []
+    for stem_name, stem_info in meta.get('stems', {}).items():
+        if stem_info.get('audio_rendered', False):
+            rendered_stems.append(stem_name)
+    return rendered_stems
 
 def get_all_class(path):
     with open(path, 'r') as f:

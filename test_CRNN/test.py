@@ -61,7 +61,7 @@ def test(model_path, midi_file_list, flac_file_list, class_json, batch_size=1, d
     print(f"平均 Recall: {np.mean(track_recalls):.4f}")
 
 if __name__ == "__main__":
-    test_midi_file_list, test_flac_file_list = collect_all_path('D:\\AI_fianl_project\\slakh2100_flac_redux\\slakh2100_flac_redux\\test')
+    test_midi_file_list, test_flac_file_list = collect_all_path('D:\\AI_fianl_project\\slakh2100_flac_redux\\slakh2100_flac_redux\\test', is_test=True)
 
     test(
         model_path = 'D:\\AI_fianl_project\\best_model.pth',
