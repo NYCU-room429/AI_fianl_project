@@ -8,8 +8,8 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 # 參數
-DATASET_ROOT = "slakh2100_flac_redux/slakh2100_flac_redux/train"
-INSTRUMENT_MAPPING_PATH = "slakh-utils/midi_inst_values/general_midi_inst_0based.json"
+DATASET_ROOT = "/Users/eddy/Desktop/code/AI_fianl_project/slakh2100_flac_redux/slakh2100_flac_redux/train"
+INSTRUMENT_MAPPING_PATH = "/Users/eddy/Desktop/code/AI_fianl_project/slakh-utils/midi_inst_values/general_midi_inst_0based.json"
 MEL_SAVE_DIR = "mel_cache"
 N_MELS = 128
 MAX_FRAMES = 1000
@@ -35,6 +35,11 @@ if os.path.exists(POS_WEIGHT_PATH):
     pos_weight = torch.tensor(np.load(POS_WEIGHT_PATH), dtype=torch.float32)
     print(f"[INFO] Loaded pos_weight from {POS_WEIGHT_PATH}")
     print("pos_weight:", pos_weight)
+    pos_weight = np.clip(pos_weight, 0.5, 10)
+    np.save(POS_WEIGHT_PATH, pos_weight)
+    print(f"[INFO] Clipped and saved pos_weight to {POS_WEIGHT_PATH}")
+    print("clip 後 pos_weight:", pos_weight)
+    pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
 else:
     def compute_pos_weight(dataset):
         total = np.zeros(n_classes)
@@ -47,7 +52,7 @@ else:
         return pos_weight
     pos_weight = compute_pos_weight(train_set)
     # 修正：clip pos_weight，避免極端值和負數
-    pos_weight = np.clip(pos_weight, 0.1, 20)
+    pos_weight = np.clip(pos_weight, 0.5, 10)
     np.save(POS_WEIGHT_PATH, pos_weight)
     pos_weight = torch.tensor(pos_weight, dtype=torch.float32)
     print(f"[INFO] Computed and saved pos_weight to {POS_WEIGHT_PATH}")
