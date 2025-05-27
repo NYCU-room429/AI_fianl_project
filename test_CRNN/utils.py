@@ -47,16 +47,16 @@ def gen_melgram(path, num_frame=1000, segment_sec=100, is_train=False):
     # === 添加 SpecAugment (僅在訓練時) ===
     if is_train:
         # 頻率遮罩 (Frequency Masking)
-        num_freq_mask = 1 # 遮罩數量
-        freq_mask_max_width = 10 # 最大頻率寬度 (您可以試驗不同值)
+        num_freq_mask = 2 # 遮罩數量
+        freq_mask_max_width = 15 # 最大頻率寬度 (您可以試驗不同值)
         for _ in range(num_freq_mask):
             f_start = np.random.randint(0, N_MELS - freq_mask_max_width)
             f_end = f_start + np.random.randint(0, freq_mask_max_width)
             mel_db[f_start:f_end, :] = 0 # 將該頻率區間設為 0
 
         # 時間遮罩 (Time Masking)
-        num_time_mask = 1 # 遮罩數量
-        time_mask_max_width = 50 # 最大時間寬度 (您可以試驗不同值)
+        num_time_mask = 2 # 遮罩數量
+        time_mask_max_width = 75 # 最大時間寬度 (您可以試驗不同值)
         for _ in range(num_time_mask):
             t_start = np.random.randint(0, num_frame - time_mask_max_width)
             t_end = t_start + np.random.randint(0, time_mask_max_width)

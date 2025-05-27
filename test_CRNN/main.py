@@ -71,7 +71,7 @@ def main():
     num_pos = all_labels.sum(axis=(0, 1))  # (num_classes,)
     num_neg = all_labels.shape[0] * all_labels.shape[1] - num_pos
     pos_weight = num_neg / (num_pos + 1e-8)
-    pos_weight = np.clip(pos_weight, 1.0, 10.0)  # 可選：限制最大值
+    pos_weight = np.clip(pos_weight, 1.0, 8.0)  # 可選：限制最大值
     pos_weight_tensor = torch.tensor(pos_weight, dtype=torch.float32).to(device)   
 
     logger.info(f"Calculated pos_weight_tensor: {pos_weight_tensor.tolist()}")
@@ -85,7 +85,7 @@ def main():
     model = CRNN().to(device)
 
     base_params = [param for name, param in model.named_parameters() if param.requires_grad]
-    optimizer = optim.Adam(base_params, lr=2e-3, weight_decay=1e-5)
+    optimizer = optim.Adam(base_params, lr=2e-3, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3, verbose=True)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
 
@@ -136,7 +136,7 @@ def main():
                     current_best_f1 = f1_score_val
                     current_best_thresh = thresh
             
-            best_thresholds[class_idx] = max(current_best_thresh, 0.1)
+            best_thresholds[class_idx] = max(current_best_thresh, 0.4)
             best_f1_per_class[class_idx] = current_best_f1
 
         logger.info(f"Optimal thresholds per class: {best_thresholds.tolist()}")
@@ -152,6 +152,7 @@ def main():
         if f1_macro_optimal_thresh > best_f1:
             best_f1 = f1_macro_optimal_thresh
             torch.save(model.state_dict(), best_model_path)
+            np.save("best_thresholds.npy", best_thresholds)
             logger.info(f"Best model saved at epoch {epoch+1} with F1 Macro (Optimal Thresh): {f1_macro_optimal_thresh:.4f}")
         # scheduler.step(val_loss)
 

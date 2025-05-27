@@ -16,26 +16,26 @@ class CRNN(nn.Module):
         self.conv1 = nn.Conv2d(1, 64, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(64)
         self.pool1 = nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))  # 只對 time 軸下採樣
-        self.drop1 = nn.Dropout(0.2)
+        self.drop1 = nn.Dropout(0.3)
 
         self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(128)
         self.pool2 = nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))
-        self.drop2 = nn.Dropout(0.2)
+        self.drop2 = nn.Dropout(0.3)
 
         self.conv3 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
         self.bn3 = nn.BatchNorm2d(128)
         self.pool3 = nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2))
-        self.drop3 = nn.Dropout(0.2)
+        self.drop3 = nn.Dropout(0.3)
 
         self.gru1 = nn.GRU(input_size=128, hidden_size=64, batch_first=True, bidirectional=True)
         self.gru2 = nn.GRU(input_size=128, hidden_size=64, batch_first=True, bidirectional=True)
 
         self.attention = nn.MultiheadAttention(embed_dim=128, num_heads=2, batch_first=True)
         self.attn_norm = nn.LayerNorm(128) # 對注意力輸出進行 LayerNorm
-        self.attn_dropout = nn.Dropout(0.2)
+        self.attn_dropout = nn.Dropout(0.3)
 
-        self.drop_final = nn.Dropout(0.4)
+        self.drop_final = nn.Dropout(0.5)
         self.fc = nn.Linear(128, num_classes)
 
     def forward(self, x):
