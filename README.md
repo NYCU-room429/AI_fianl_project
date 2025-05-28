@@ -1,5 +1,3 @@
----
-
 # 🎼 AI Final Project: Instrument Recognition and Dominant Instrument Detection
 
 ## 🧠 Introduction
@@ -17,6 +15,31 @@ We utilize the **[Slakh2100](https://github.com/ethman/slakh-utils)** dataset—
 
 * **Progress Report Slides**
   [📊 Google Slides](https://docs.google.com/presentation/d/1NKNK1LOjQL-NjCYRZixUHCrWynjLjuiBDPvu7gCSuxY/edit?usp=sharing)
+
+---
+
+## 🔽 Dataset Download
+
+Before training, you **must download the Slakh2100 dataset** from the official source:
+
+* Download link: [https://zenodo.org/record/4038580](https://zenodo.org/record/4038580)
+* Recommended version: `slakh2100_flac_redux`
+
+After downloading, extract the dataset and place it in the following structure:
+
+```
+project_root/
+├── slakh2100_flac_redux/
+│   └── slakh2100_flac_redux/
+│       ├── train/
+│       ├── validation/
+│       └── test/
+├── main.py
+├── test.py
+└── requirements.txt
+```
+
+Make sure the dataset directory path in `main.py` matches this location. If needed, you can modify the path in your script accordingly.
 
 ---
 
@@ -39,6 +62,43 @@ python -m venv ai_final
 source ai_final/bin/activate
 deactivate  # To exit
 ```
+
+---
+
+## ⚡ CUDA Acceleration with PyTorch
+
+To train with GPU acceleration, you must:
+
+1. Install PyTorch with CUDA support.
+
+   Go to the official installation page:
+   👉 [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
+
+   Example installation (for CUDA 11.8):
+
+   ```bash
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+   ```
+
+2. Confirm that PyTorch detects your GPU:
+
+   ```python
+   import torch
+   print(torch.cuda.is_available())  # Should return True
+   ```
+
+3. In your training script (`main.py`), ensure the model and tensors are moved to the correct device:
+
+   ```python
+   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+   model.to(device)
+   ```
+
+---
+
+## 💡 Tip
+
+If you don’t have a GPU or compatible CUDA version, training will still run on CPU, but it will be significantly slower.
 
 ---
 
