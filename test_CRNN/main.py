@@ -2,7 +2,7 @@ import pretty_midi
 import numpy as np
 from loguru import logger
 import torch
-import os, tqdm
+from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from sklearn.metrics import f1_score
@@ -21,7 +21,7 @@ def collect_labels_parallel(train_loader):
         return label.numpy()
 
     batches = list(train_loader)
-    with tqdm_joblib(tqdm.tqdm(desc="Collecting labels", total=len(batches))):
+    with tqdm_joblib(tqdm(desc="Collecting labels", total=len(batches))):
         results = Parallel(n_jobs=-1, backend="threading")(
             delayed(get_label)(batch) for batch in batches
         )
@@ -107,7 +107,7 @@ def main():
         num_classes = model.fc.out_features
 
         # === Parallel threshold search with tqdm_joblib ===
-        with tqdm_joblib(tqdm.tqdm(desc="Threshold search", total=num_classes)):
+        with tqdm_joblib(tqdm(desc="Threshold search", total=num_classes)):
             results = Parallel(n_jobs=-1)(
                 delayed(find_best_threshold)(
                     val_outputs[:, class_idx], val_labels[:, class_idx]

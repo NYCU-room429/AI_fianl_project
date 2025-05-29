@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from DataLoader import collect_all_path, LoadDataset
-from utils import gen_melgram, get_all_class, extract_label_from_midi
+from utils import get_all_class
 from CRNN import CRNN
 from sklearn.metrics import f1_score, precision_score, recall_score
 
