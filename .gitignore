@@ -24,7 +24,7 @@ slakh2100_flac_redux.tar.gz
 mel_cache
 ai_final
 ProcessData
-__pycache__
+__pycache__/
 
 # Directories potentially created on network shares
 .AppleDB
