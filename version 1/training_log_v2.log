@@ -1,0 +1,298 @@
+2025-05-30 21:26:59.283 | INFO     | __main__:main:31 - --- Initializing Run ---
+2025-05-30 21:26:59.283 | INFO     | __main__:main:32 - Using device: cuda
+2025-05-30 21:26:59.283 | INFO     | __main__:main:34 - Full Configuration:
+{
+  "torch": "<module 'torch' from 'D:\\\\AI_fianl_project\\\\ai_final\\\\Lib\\\\site-packages\\\\torch\\\\__init__.py'>",
+  "os": "<module 'os' (frozen)>",
+  "DEVICE": "cuda",
+  "NUM_WORKERS": 2,
+  "SEED": 42,
+  "SLAKH_ROOT_DIR": "D:\\\\AI_fianl_project\\\\slakh2100_flac_redux\\\\slakh2100_flac_redux",
+  "TRAIN_DIR_NAME": "train",
+  "VALID_DIR_NAME": "validation",
+  "TEST_DIR_NAME": "test",
+  "CLASS_JSON_PATH": "D:\\AI_fianl_project\\slakh-utils\\midi_inst_values\\general_midi_inst_0based.json",
+  "SAMPLE_RATE": 22050,
+  "SEGMENT_SEC": 10.0,
+  "N_MELS": 128,
+  "N_FFT": 2048,
+  "HOP_LENGTH": 220,
+  "NUM_SPECTROGRAM_FRAMES": 1003,
+  "SPECAUG_FREQ_MASKS": 2,
+  "SPECAUG_TIME_MASKS": 2,
+  "SPECAUG_FREQ_MAX_WIDTH": 20,
+  "SPECAUG_TIME_MAX_WIDTH": 100,
+  "MODEL_CNN_FILTERS": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "MODEL_RNN_UNITS": 256,
+  "MODEL_ATTENTION_HEADS": 4,
+  "MODEL_DROPOUT_RATE": 0.35,
+  "BATCH_SIZE": 8,
+  "LEARNING_RATE": 0.0003,
+  "WEIGHT_DECAY": 1e-05,
+  "EPOCHS": 70,
+  "GRAD_CLIP_NORM": 1.0,
+  "POS_WEIGHT_CLAMP_MIN": 1.0,
+  "POS_WEIGHT_CLAMP_MAX": 12.0,
+  "LR_SCHEDULER_PATIENCE": 7,
+  "LR_SCHEDULER_FACTOR": 0.5,
+  "EARLY_STOPPING_PATIENCE": 15,
+  "MODEL_SAVE_DIR": "D:\\AI_fianl_project\\test_CRNN",
+  "MODEL_FILENAME": "instr_recognizer_best_v2.pth",
+  "THRESHOLDS_FILENAME": "instr_recognizer_thresholds_v2.npy",
+  "LOG_FILENAME": "training_log_v2.log",
+  "PLOT_FILENAME": "training_plot_v2.png",
+  "GUI_DISPLAY_PROB_THRESHOLD": 0.1,
+  "MIN_AUDIO_DURATION_SEC": 10.5
+}
+2025-05-30 21:26:59.284 | INFO     | __main__:main:41 - Collecting training file paths...
+2025-05-30 21:27:17.890 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 14835 valid audio-MIDI pairs from train.
+2025-05-30 21:27:17.892 | INFO     | __main__:main:46 - Collecting validation file paths...
+2025-05-30 21:27:22.342 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 3103 valid audio-MIDI pairs from validation.
+2025-05-30 21:28:24.680 | INFO     | __main__:main:31 - --- Initializing Run ---
+2025-05-30 21:28:24.681 | INFO     | __main__:main:32 - Using device: cuda
+2025-05-30 21:28:24.681 | INFO     | __main__:main:34 - Full Configuration:
+{
+  "torch": "<module 'torch' from 'D:\\\\AI_fianl_project\\\\ai_final\\\\Lib\\\\site-packages\\\\torch\\\\__init__.py'>",
+  "os": "<module 'os' (frozen)>",
+  "DEVICE": "cuda",
+  "NUM_WORKERS": 2,
+  "SEED": 42,
+  "SLAKH_ROOT_DIR": "D:\\\\AI_fianl_project\\\\slakh2100_flac_redux\\\\slakh2100_flac_redux",
+  "TRAIN_DIR_NAME": "train",
+  "VALID_DIR_NAME": "validation",
+  "TEST_DIR_NAME": "test",
+  "CLASS_JSON_PATH": "D:\\AI_fianl_project\\slakh-utils\\midi_inst_values\\general_midi_inst_0based.json",
+  "SAMPLE_RATE": 22050,
+  "SEGMENT_SEC": 10.0,
+  "N_MELS": 128,
+  "N_FFT": 2048,
+  "HOP_LENGTH": 220,
+  "NUM_SPECTROGRAM_FRAMES": 1003,
+  "SPECAUG_FREQ_MASKS": 2,
+  "SPECAUG_TIME_MASKS": 2,
+  "SPECAUG_FREQ_MAX_WIDTH": 20,
+  "SPECAUG_TIME_MAX_WIDTH": 100,
+  "MODEL_CNN_FILTERS": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "MODEL_RNN_UNITS": 256,
+  "MODEL_ATTENTION_HEADS": 4,
+  "MODEL_DROPOUT_RATE": 0.35,
+  "BATCH_SIZE": 8,
+  "LEARNING_RATE": 0.0003,
+  "WEIGHT_DECAY": 1e-05,
+  "EPOCHS": 70,
+  "GRAD_CLIP_NORM": 1.0,
+  "POS_WEIGHT_CLAMP_MIN": 1.0,
+  "POS_WEIGHT_CLAMP_MAX": 12.0,
+  "LR_SCHEDULER_PATIENCE": 7,
+  "LR_SCHEDULER_FACTOR": 0.5,
+  "EARLY_STOPPING_PATIENCE": 15,
+  "MODEL_SAVE_DIR": "D:\\AI_fianl_project\\test_CRNN",
+  "MODEL_FILENAME": "instr_recognizer_best_v2.pth",
+  "THRESHOLDS_FILENAME": "instr_recognizer_thresholds_v2.npy",
+  "LOG_FILENAME": "training_log_v2.log",
+  "PLOT_FILENAME": "training_plot_v2.png",
+  "GUI_DISPLAY_PROB_THRESHOLD": 0.1,
+  "MIN_AUDIO_DURATION_SEC": 10.5
+}
+2025-05-30 21:28:24.682 | INFO     | __main__:main:41 - Collecting training file paths...
+2025-05-30 21:28:31.327 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 14835 valid audio-MIDI pairs from train.
+2025-05-30 21:28:31.328 | INFO     | __main__:main:46 - Collecting validation file paths...
+2025-05-30 21:28:32.622 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 3103 valid audio-MIDI pairs from validation.
+2025-05-30 21:28:32.623 | INFO     | data_loader:get_positive_weights:145 - Calculating positive weights using up to 3000 samples...
+2025-05-30 21:29:27.645 | INFO     | data_loader:get_positive_weights:174 - Calculated pos_weights: [12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0]
+2025-05-30 21:29:28.110 | INFO     | __main__:main:69 - Model initialized with 13,674,435 trainable parameters.
+2025-05-30 21:29:29.207 | INFO     | __main__:main:82 - --- Starting Training for 70 Epochs ---
+2025-05-30 21:29:29.207 | INFO     | __main__:main:85 - Epoch 1/70 | LR: 3.00e-04
+2025-05-30 21:33:28.798 | INFO     | __main__:main:31 - --- Initializing Run ---
+2025-05-30 21:33:28.798 | INFO     | __main__:main:32 - Using device: cuda
+2025-05-30 21:33:28.798 | INFO     | __main__:main:34 - Full Configuration:
+{
+  "torch": "<module 'torch' from 'D:\\\\AI_fianl_project\\\\ai_final\\\\Lib\\\\site-packages\\\\torch\\\\__init__.py'>",
+  "os": "<module 'os' (frozen)>",
+  "DEVICE": "cuda",
+  "NUM_WORKERS": 2,
+  "SEED": 42,
+  "SLAKH_ROOT_DIR": "D:\\\\AI_fianl_project\\\\slakh2100_flac_redux\\\\slakh2100_flac_redux",
+  "TRAIN_DIR_NAME": "train",
+  "VALID_DIR_NAME": "validation",
+  "TEST_DIR_NAME": "test",
+  "CLASS_JSON_PATH": "D:\\AI_fianl_project\\slakh-utils\\midi_inst_values\\general_midi_inst_0based.json",
+  "SAMPLE_RATE": 22050,
+  "SEGMENT_SEC": 10.0,
+  "N_MELS": 128,
+  "N_FFT": 2048,
+  "HOP_LENGTH": 220,
+  "NUM_SPECTROGRAM_FRAMES": 1003,
+  "SPECAUG_FREQ_MASKS": 2,
+  "SPECAUG_TIME_MASKS": 2,
+  "SPECAUG_FREQ_MAX_WIDTH": 20,
+  "SPECAUG_TIME_MAX_WIDTH": 100,
+  "MODEL_CNN_FILTERS": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "MODEL_RNN_UNITS": 256,
+  "MODEL_ATTENTION_HEADS": 4,
+  "MODEL_DROPOUT_RATE": 0.35,
+  "BATCH_SIZE": 8,
+  "LEARNING_RATE": 0.0003,
+  "WEIGHT_DECAY": 1e-05,
+  "EPOCHS": 70,
+  "GRAD_CLIP_NORM": 1.0,
+  "POS_WEIGHT_CLAMP_MIN": 1.0,
+  "POS_WEIGHT_CLAMP_MAX": 12.0,
+  "LR_SCHEDULER_PATIENCE": 7,
+  "LR_SCHEDULER_FACTOR": 0.5,
+  "EARLY_STOPPING_PATIENCE": 15,
+  "MODEL_SAVE_DIR": "D:\\AI_fianl_project\\test_CRNN",
+  "MODEL_FILENAME": "instr_recognizer_best_v2.pth",
+  "THRESHOLDS_FILENAME": "instr_recognizer_thresholds_v2.npy",
+  "LOG_FILENAME": "training_log_v2.log",
+  "PLOT_FILENAME": "training_plot_v2.png",
+  "GUI_DISPLAY_PROB_THRESHOLD": 0.1,
+  "MIN_AUDIO_DURATION_SEC": 10.5
+}
+2025-05-30 21:33:28.799 | INFO     | __main__:main:41 - Collecting training file paths...
+2025-05-30 21:33:35.435 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 14835 valid audio-MIDI pairs from train.
+2025-05-30 21:33:35.435 | INFO     | __main__:main:46 - Collecting validation file paths...
+2025-05-30 21:33:36.723 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 3103 valid audio-MIDI pairs from validation.
+2025-05-30 21:33:36.724 | INFO     | data_loader:get_positive_weights:145 - Calculating positive weights using up to 3000 samples...
+2025-05-30 21:34:15.232 | INFO     | data_loader:get_positive_weights:174 - Calculated pos_weights: [12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0]
+2025-05-30 21:34:15.658 | INFO     | __main__:main:69 - Model initialized with 13,674,435 trainable parameters.
+2025-05-30 21:34:16.481 | INFO     | __main__:main:82 - --- Starting Training for 70 Epochs ---
+2025-05-30 21:34:16.481 | INFO     | __main__:main:85 - Epoch 1/70 | LR: 3.00e-04
+2025-05-30 21:35:45.286 | INFO     | __main__:main:31 - --- Initializing Run ---
+2025-05-30 21:35:45.286 | INFO     | __main__:main:32 - Using device: cuda
+2025-05-30 21:35:45.287 | INFO     | __main__:main:34 - Full Configuration:
+{
+  "torch": "<module 'torch' from 'D:\\\\AI_fianl_project\\\\ai_final\\\\Lib\\\\site-packages\\\\torch\\\\__init__.py'>",
+  "os": "<module 'os' (frozen)>",
+  "DEVICE": "cuda",
+  "NUM_WORKERS": 2,
+  "SEED": 42,
+  "SLAKH_ROOT_DIR": "D:\\\\AI_fianl_project\\\\slakh2100_flac_redux\\\\slakh2100_flac_redux",
+  "TRAIN_DIR_NAME": "train",
+  "VALID_DIR_NAME": "validation",
+  "TEST_DIR_NAME": "test",
+  "CLASS_JSON_PATH": "D:\\AI_fianl_project\\slakh-utils\\midi_inst_values\\general_midi_inst_0based.json",
+  "SAMPLE_RATE": 22050,
+  "SEGMENT_SEC": 10.0,
+  "N_MELS": 128,
+  "N_FFT": 2048,
+  "HOP_LENGTH": 220,
+  "NUM_SPECTROGRAM_FRAMES": 1003,
+  "SPECAUG_FREQ_MASKS": 2,
+  "SPECAUG_TIME_MASKS": 2,
+  "SPECAUG_FREQ_MAX_WIDTH": 20,
+  "SPECAUG_TIME_MAX_WIDTH": 100,
+  "MODEL_CNN_FILTERS": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "MODEL_RNN_UNITS": 256,
+  "MODEL_ATTENTION_HEADS": 4,
+  "MODEL_DROPOUT_RATE": 0.35,
+  "BATCH_SIZE": 8,
+  "LEARNING_RATE": 0.0003,
+  "WEIGHT_DECAY": 1e-05,
+  "EPOCHS": 70,
+  "GRAD_CLIP_NORM": 1.0,
+  "POS_WEIGHT_CLAMP_MIN": 1.0,
+  "POS_WEIGHT_CLAMP_MAX": 12.0,
+  "LR_SCHEDULER_PATIENCE": 7,
+  "LR_SCHEDULER_FACTOR": 0.5,
+  "EARLY_STOPPING_PATIENCE": 15,
+  "MODEL_SAVE_DIR": "D:\\AI_fianl_project\\test_CRNN",
+  "MODEL_FILENAME": "instr_recognizer_best_v2.pth",
+  "THRESHOLDS_FILENAME": "instr_recognizer_thresholds_v2.npy",
+  "LOG_FILENAME": "training_log_v2.log",
+  "PLOT_FILENAME": "training_plot_v2.png",
+  "GUI_DISPLAY_PROB_THRESHOLD": 0.1,
+  "MIN_AUDIO_DURATION_SEC": 10.5
+}
+2025-05-30 21:35:45.288 | INFO     | __main__:main:41 - Collecting training file paths...
+2025-05-30 21:35:51.761 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 14835 valid audio-MIDI pairs from train.
+2025-05-30 21:35:51.761 | INFO     | __main__:main:46 - Collecting validation file paths...
+2025-05-30 21:35:53.071 | INFO     | data_loader:collect_all_file_tuples:73 - Collected 3103 valid audio-MIDI pairs from validation.
+2025-05-30 21:41:40 | INFO     | --- Initializing Run ---
+2025-05-30 21:41:40 | INFO     | Using device: cuda
+2025-05-30 21:41:40 | INFO     | Full Configuration:
+{
+  "torch": "<module 'torch' from 'D:\\\\AI_fianl_project\\\\ai_final\\\\Lib\\\\site-packages\\\\torch\\\\__init__.py'>",
+  "os": "<module 'os' (frozen)>",
+  "DEVICE": "cuda",
+  "NUM_WORKERS": 2,
+  "SEED": 42,
+  "SLAKH_ROOT_DIR": "D:\\\\AI_fianl_project\\\\slakh2100_flac_redux\\\\slakh2100_flac_redux",
+  "TRAIN_DIR_NAME": "train",
+  "VALID_DIR_NAME": "validation",
+  "TEST_DIR_NAME": "test",
+  "CLASS_JSON_PATH": "D:\\AI_fianl_project\\slakh-utils\\midi_inst_values\\general_midi_inst_0based.json",
+  "SAMPLE_RATE": 22050,
+  "SEGMENT_SEC": 10.0,
+  "N_MELS": 128,
+  "N_FFT": 2048,
+  "HOP_LENGTH": 220,
+  "NUM_SPECTROGRAM_FRAMES": 1003,
+  "SPECAUG_FREQ_MASKS": 2,
+  "SPECAUG_TIME_MASKS": 2,
+  "SPECAUG_FREQ_MAX_WIDTH": 20,
+  "SPECAUG_TIME_MAX_WIDTH": 100,
+  "MODEL_CNN_FILTERS": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "MODEL_RNN_UNITS": 256,
+  "MODEL_ATTENTION_HEADS": 4,
+  "MODEL_DROPOUT_RATE": 0.35,
+  "BATCH_SIZE": 8,
+  "LEARNING_RATE": 0.0003,
+  "WEIGHT_DECAY": 1e-05,
+  "EPOCHS": 70,
+  "GRAD_CLIP_NORM": 1.0,
+  "POS_WEIGHT_CLAMP_MIN": 1.0,
+  "POS_WEIGHT_CLAMP_MAX": 12.0,
+  "LR_SCHEDULER_PATIENCE": 7,
+  "LR_SCHEDULER_FACTOR": 0.5,
+  "EARLY_STOPPING_PATIENCE": 15,
+  "MODEL_SAVE_DIR": "D:\\AI_fianl_project\\test_CRNN",
+  "MODEL_FILENAME": "instr_recognizer_best_v2.pth",
+  "THRESHOLDS_FILENAME": "instr_recognizer_thresholds_v2.npy",
+  "LOG_FILENAME": "training_log_v2.log",
+  "PLOT_FILENAME": "training_plot_v2.png",
+  "GUI_DISPLAY_PROB_THRESHOLD": 0.1,
+  "MIN_AUDIO_DURATION_SEC": 10.5
+}
+2025-05-30 21:41:40 | INFO     | Collecting training file paths...
+2025-05-30 21:41:47 | INFO     | Collected 14835 valid audio-MIDI pairs from train.
+2025-05-30 21:41:47 | INFO     | Collecting validation file paths...
+2025-05-30 21:41:48 | INFO     | Collected 3103 valid audio-MIDI pairs from validation.
+2025-05-30 21:41:48 | INFO     | Calculating positive weights using up to 3000 samples...
+2025-05-30 21:42:26 | INFO     | Calculated pos_weights: [12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0]
+2025-05-30 21:42:27 | INFO     | Model initialized with 13,674,435 trainable parameters.
+2025-05-30 21:42:27 | INFO     | --- Starting Training for 70 Epochs ---
+2025-05-30 21:42:27 | INFO     | Epoch 1/70 | LR: 3.00e-04
+2025-05-30 22:03:18 | INFO     | Epoch 1 Avg Train Loss: 0.1391
+2025-05-30 22:08:54 | INFO     | Epoch 1 Val Loss: 0.1194 | Val Micro-F1: 0.1498 | Val Macro-F1: 0.0729
+2025-05-30 22:08:54 | INFO     | *** Best Model Saved! Val Macro F1 improved from -1.0000 to 0.0729 ***
+2025-05-30 22:08:54 | INFO     | Epoch 2/70 | LR: 3.00e-04
+2025-05-30 22:35:13 | INFO     | Epoch 2 Avg Train Loss: 0.1125
+2025-05-30 22:41:01 | INFO     | Epoch 2 Val Loss: 0.1071 | Val Micro-F1: 0.1761 | Val Macro-F1: 0.0868
+2025-05-30 22:41:01 | INFO     | *** Best Model Saved! Val Macro F1 improved from 0.0729 to 0.0868 ***
+2025-05-30 22:41:01 | INFO     | Epoch 3/70 | LR: 3.00e-04
