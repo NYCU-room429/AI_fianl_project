@@ -3,15 +3,24 @@ import numpy as np
 import pretty_midi
 import json, yaml
 import matplotlib.pyplot as plt
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message="Tempo, Key or Time signature change events found on non-zero tracks*",
+    category=RuntimeWarning,
+)
+
 
 def get_rendered_stems(metadata_path):
-    with open(metadata_path, 'r', encoding='utf-8') as f:
+    with open(metadata_path, "r", encoding="utf-8") as f:
         meta = yaml.safe_load(f)
     rendered_stems = []
-    for stem_name, stem_info in meta.get('stems', {}).items():
-        if stem_info.get('audio_rendered', False):
+    for stem_name, stem_info in meta.get("stems", {}).items():
+        if stem_info.get("audio_rendered", False):
             rendered_stems.append(stem_name)
     return rendered_stems
+
 
 def get_all_class(path):
     with open(path, "r") as f:
@@ -23,9 +32,9 @@ def get_all_class(path):
 
 
 def gen_melgram(path, num_frame=1000, segment_sec=100, is_train=False):
-    SR = 22050
-    N_MELS = 96
-    N_FFT = 512
+    SR = 44100
+    N_MELS = 64
+    N_FFT = 1024
 
     src, sr = librosa.load(path, sr=SR)
     total_sec = len(src) / sr
