@@ -16,6 +16,8 @@ We utilize the **[Slakh2100](https://github.com/ethman/slakh-utils)** dataset—
 * **Progress Report Slides**
   [📊 Google Slides](https://docs.google.com/presentation/d/1NKNK1LOjQL-NjCYRZixUHCrWynjLjuiBDPvu7gCSuxY/edit?usp=sharing)
 
+* **Final presentation Slides**
+  [📊 Canva](https://docs.google.com/presentation/d/1NKNK1LOjQL-NjCYRZixUHCrWynjLjuiBDPvu7gCSuxY/edit?usp=sharing](https://www.canva.com/design/DAGo7rASyC4/1ifZqAWp0DwDDGjLzSdvPw/edit))
 ---
 
 ## 🔽 Dataset Download
