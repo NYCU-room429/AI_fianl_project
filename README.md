@@ -166,10 +166,9 @@ slakh2100_flac_redux/
 
 ---
 
-## 🚧 Future Work (Optional Section)
+## 🎬 DEMO
 
-* Improve model generalization across unseen instrument combinations.
-* Explore transformer-based models for better sequential MIDI understanding.
-* Extend analysis to polyphonic dominance (multiple dominant instruments).
+![alt text](image.png)
+*Above: Model prediction output for a sample track. The detected instruments are shown with their corresponding playtime durations. The dominant instrument is highlighted.*
 
 ---
