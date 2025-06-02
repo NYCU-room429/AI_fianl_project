@@ -107,7 +107,7 @@ def get_rendered_stems(metadata_path):
 
 
 def gen_melgram(path, num_frame=1000, segment_sec=100, is_train=False):
-    SR = 22050
+    SR = 44100
     N_MELS = 128
     N_FFT = 2048
 
