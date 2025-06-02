@@ -100,7 +100,7 @@ if __name__ == "__main__":
     )
 
     test(
-        model_path="C:\\Users\\linbr\\Desktop\\AI_fianl_project\\test_CRNN\\best_model.pth",
+        model_path="best_thresholds.npy",
         midi_file_list=test_midi_file_list,
         flac_file_list=test_flac_file_list,
         class_json="C:\\Users\\linbr\\Desktop\\AI_fianl_project\\slakh-utils\\midi_inst_values\\general_midi_inst_0based.json",
