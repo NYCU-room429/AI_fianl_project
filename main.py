@@ -15,30 +15,21 @@ from DataLoader import (
     collate_fn_skip_nones,
 )
 from CRNN import CRNN, train, validate
-from utils import plot, get_all_class  # get_all_class now returns list of class strings
+from utils import plot, get_all_class
 from joblib import Parallel, delayed
-from tqdm_joblib import tqdm_joblib  # Ensure this is installed: pip install tqdm-joblib
-
-
-# IMPORTANT: Ensure general_midi_inst_0based.json is a single valid JSON object.
-# CLASS_JSON_PATH is defined in DataLoader.py and imported here.
+from tqdm_joblib import tqdm_joblib
 
 
 def collect_labels_parallel(data_loader_for_labels):
-    # Note: This function collects labels from a loader.
-    # Ensure the loader's dataset is initialized correctly (e.g., not in 'is_train=True' mode if it affects label generation)
-    # The primary purpose here is to get a representative set of labels for pos_weight calculation.
     def get_label(batch_data):
         _, label_tensor = batch_data
         if label_tensor is None:
-            return np.array([])  # Return empty if batch was problematic
+            return np.array([])
         return label_tensor.numpy()
 
-    # Batches from the loader
-    # Need to handle if collate_fn_skip_nones returns (None, None)
     batches = []
     for b in tqdm(data_loader_for_labels, desc="Loading batches for pos_weight"):
-        if b[0] is not None and b[1] is not None:  # Check if batch is valid
+        if b[0] is not None and b[1] is not None:
             batches.append(b)
 
     if not batches:
@@ -48,7 +39,7 @@ def collect_labels_parallel(data_loader_for_labels):
         return np.array([])
 
     with tqdm_joblib(tqdm(desc="Collecting labels for pos_weight", total=len(batches))):
-        results = Parallel(n_jobs=4, backend="threading")(
+        results = Parallel(n_jobs=-1, backend="threading")(
             [delayed(get_label)(batch) for batch in batches]
         )
 
@@ -63,32 +54,23 @@ def collect_labels_parallel(data_loader_for_labels):
 def find_best_threshold(class_logits, class_true_labels):
     current_best_f1 = -1
     current_best_thresh = 0.01  # Start low
-    # Iterate from 0.01 up to 0.99
     for thresh_candidate in np.arange(0.01, 1.0, 0.01):
-        # Apply sigmoid before thresholding if logits are passed
-        # Assuming class_logits are raw model outputs (before sigmoid)
         class_preds = (
             torch.sigmoid(torch.tensor(class_logits)) > thresh_candidate
         ).numpy()
 
         # Handle cases for F1 score calculation
-        if (
-            np.sum(class_true_labels) == 0 and np.sum(class_preds) == 0
-        ):  # Both no positives
+        if np.sum(class_true_labels) == 0 and np.sum(class_preds) == 0:
             f1_score_val = 1.0
-        elif (
-            np.sum(class_true_labels) == 0 and np.sum(class_preds) > 0
-        ):  # False positives only
+        elif np.sum(class_true_labels) == 0 and np.sum(class_preds) > 0:
             f1_score_val = 0.0
-        elif (
-            np.sum(class_true_labels) > 0 and np.sum(class_preds) == 0
-        ):  # False negatives only
+        elif np.sum(class_true_labels) > 0 and np.sum(class_preds) == 0:
             f1_score_val = 0.0
-        else:  # Normal case
+        else:
             f1_score_val = f1_score(
                 class_true_labels,
                 class_preds,
-                average="binary",  # Per-class F1
+                average="binary",
                 zero_division=0,
             )
 
@@ -96,7 +78,6 @@ def find_best_threshold(class_logits, class_true_labels):
             current_best_f1 = f1_score_val
             current_best_thresh = thresh_candidate
 
-    # Removed: max(current_best_thresh, 0.4). Let the data decide the threshold.
     return current_best_thresh, current_best_f1
 
 
@@ -138,27 +119,23 @@ def main():
         is_train=False,
     )
 
-    # Using collate_fn_skip_nones to handle potential None items from dataset
     train_loader = DataLoader(
         train_dataset,
-        batch_size=8,
+        batch_size=16,
         shuffle=True,
-        num_workers=2,
+        num_workers=8,
         collate_fn=collate_fn_skip_nones,
         pin_memory=True if device.type == "cuda" else False,
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=8,
+        batch_size=16,
         shuffle=False,
-        num_workers=2,
+        num_workers=8,
         collate_fn=collate_fn_skip_nones,
         pin_memory=True if device.type == "cuda" else False,
     )
 
-    # For pos_weight, create a temporary loader if train_loader uses is_train=True for augmentations
-    # that might affect label distribution (though unlikely for these labels).
-    # It's generally fine to use the main train_loader if SpecAugment doesn't alter label presence.
     logger.info("Start calculating pos weight from training data")
     all_labels_for_pos_weight = collect_labels_parallel(
         train_loader
@@ -186,9 +163,6 @@ def main():
             )  # Sum over batch and time_frame dimensions
             num_neg = num_frames_total - num_pos
 
-            # Handle cases where a class never appears (num_pos[class_idx] == 0)
-            # Avoid division by zero by adding epsilon.
-            # If a class has no positive examples, its weight doesn't matter much or could be set to 1.
             pos_weight = num_neg / (num_pos + 1e-8)
             pos_weight[num_pos == 0] = 1.0  # If no positive examples, set weight to 1
 
@@ -244,17 +218,14 @@ def main():
 
         logger.info("Finding optimal thresholds per class on validation set...")
 
-        # Parallel threshold search
-        # Ensure val_outputs_logits and val_labels_true are (num_samples, num_classes)
-        if val_outputs_logits.ndim == 3:  # (batch_combined, time_frames, num_classes)
-            # This should already be (num_total_frames, num_classes) from validate function
+        if val_outputs_logits.ndim == 3:
             pass
 
         with tqdm_joblib(
             tqdm(desc="Threshold search", total=num_classes)
         ) as progress_bar:
             results = Parallel(
-                n_jobs=4
+                n_jobs=-1
             )(  # Using default backend (loky or multiprocessing)
                 delayed(find_best_threshold)(
                     val_outputs_logits[:, class_idx], val_labels_true[:, class_idx]
@@ -270,7 +241,6 @@ def main():
             f"Optimal thresholds (first 10): {current_epoch_best_thresholds.tolist()[:10]}"
         )
 
-        # Apply sigmoid and optimal thresholds to get predictions
         val_preds_optimal_thresh = (
             torch.sigmoid(torch.tensor(val_outputs_logits))
             > torch.tensor(current_epoch_best_thresholds).unsqueeze(0)

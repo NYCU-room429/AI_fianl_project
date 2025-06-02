@@ -35,11 +35,11 @@ class CRNN(nn.Module):
             input_size=128, hidden_size=64, batch_first=True, bidirectional=True
         )
 
-        # self.attention = nn.MultiheadAttention(
-        #     embed_dim=128, num_heads=2, batch_first=True
-        # )
-        # self.attn_norm = nn.LayerNorm(128)
-        # self.attn_dropout = nn.Dropout(0.5)
+        self.attention = nn.MultiheadAttention(
+            embed_dim=128, num_heads=2, batch_first=True
+        )
+        self.attn_norm = nn.LayerNorm(128)
+        self.attn_dropout = nn.Dropout(0.5)
 
         self.drop_final = nn.Dropout(0.7)
         self.fc = nn.Linear(128, num_classes)
@@ -67,9 +67,9 @@ class CRNN(nn.Module):
         x, _ = self.gru1(x)
         x, _ = self.gru2(x)
 
-        # attn_output, _ = self.attention(x, x, x, need_weights=False)
-        # x = self.attn_norm(x + attn_output)
-        # x = self.attn_dropout(x)
+        attn_output, _ = self.attention(x, x, x, need_weights=False)
+        x = self.attn_norm(x + attn_output)
+        x = self.attn_dropout(x)
 
         x = self.drop_final(x)
         x = self.fc(x)  # (batch, pooled_time, num_classes)
